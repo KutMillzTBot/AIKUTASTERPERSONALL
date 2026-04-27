@@ -1083,6 +1083,27 @@ body::before {
   color: var(--text-sec);
 }
 
+.watchlist-chip-quote {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+.watchlist-chip-quote span {
+  white-space: nowrap;
+}
+
+.watchlist-chip-quote .up {
+  color: var(--green);
+}
+
+.watchlist-chip-quote .down {
+  color: var(--red);
+}
+
 .watchlist-chip small {
   display: block;
   color: var(--text-muted);
@@ -1237,6 +1258,10 @@ body::before {
   font-family: var(--mono);
   font-size: 13px;
   color: var(--text-primary);
+}
+
+#market-modal-daily-change {
+  font-family: var(--mono);
 }
 
 .market-ticks-wrap {

@@ -459,6 +459,32 @@ function signalClassName(signalText) {
   return "hold";
 }
 
+function parseDailyChangePct(snapshot = {}) {
+  const direct = Number(snapshot.daily_change_pct);
+  if (Number.isFinite(direct)) return direct;
+  const fallback = Number(snapshot.change_pct);
+  if (Number.isFinite(fallback)) return fallback;
+  const open = Number(snapshot.day_open);
+  const price = signalPriceFromPayload(snapshot, NaN);
+  if (Number.isFinite(open) && open > 0 && Number.isFinite(price) && price > 0) {
+    return ((price - open) / open) * 100;
+  }
+  return NaN;
+}
+
+function dailyChangeClassName(changePct) {
+  if (!Number.isFinite(changePct)) return "";
+  if (changePct > 0) return "up";
+  if (changePct < 0) return "down";
+  return "";
+}
+
+function formatDailyChange(changePct) {
+  if (!Number.isFinite(changePct)) return "--";
+  const sign = changePct > 0 ? "+" : "";
+  return `${sign}${changePct.toFixed(2)}%`;
+}
+
 function updateManualSummary() {
   set("manual-summary-symbol", currentSymbol || "-");
   set("manual-summary-order", String(manualOrderType || "-").replaceAll("_", " "));
@@ -548,6 +574,58 @@ function rememberMarketSnapshot(symbol, payload) {
   marketTickStore[sym] = bucket;
 }
 
+function rememberMarketQuote(symbol, payload) {
+  const sym = normalizeMarketSymbol(symbol);
+  if (!sym || !payload || typeof payload !== "object") return;
+
+  const merged = {
+    ...marketSignalCache[sym],
+    ...payload,
+    symbol: sym,
+    timestamp: payload.timestamp || new Date().toISOString(),
+  };
+  marketSignalCache[sym] = merged;
+
+  const bid = Number(merged.bid);
+  const ask = Number(merged.ask);
+  const mid = Number.isFinite(bid) && bid > 0 && Number.isFinite(ask) && ask > 0
+    ? (bid + ask) / 2
+    : signalPriceFromPayload(merged, NaN);
+  if (!Number.isFinite(mid) || mid <= 0) return;
+
+  const bucket = marketTickStore[sym] || [];
+  const latest = bucket[0];
+  const ts = merged.timestamp || new Date().toISOString();
+  if (latest && latest.ts === ts && Number(latest.price) === Number(mid)) return;
+  bucket.unshift({
+    ts,
+    price: mid,
+    bid: Number.isFinite(bid) ? bid : NaN,
+    ask: Number.isFinite(ask) ? ask : NaN,
+    signal: parseSignalText(merged),
+    score: Number(merged.score || 0),
+  });
+  if (bucket.length > 80) bucket.length = 80;
+  marketTickStore[sym] = bucket;
+}
+
+async function loadWatchQuotes(symbols = window.__lastMtWatchlist || [], { force = false } = {}) {
+  if (!isConnected) return;
+  const base = (Array.isArray(symbols) ? symbols : [symbols]).map(normalizeMarketSymbol).filter(Boolean);
+  const ordered = [currentSymbol, latestMtSymbol, ...base].map(normalizeMarketSymbol).filter(Boolean);
+  const list = [...new Set(ordered)].slice(0, 6);
+  if (!list.length) return;
+  const query = encodeURIComponent(list.join(","));
+  const ep = `/market/quotes?symbols=${query}${force ? "&force=1" : ""}`;
+  const payload = await apiQuiet(ep, { timeout: 6000 });
+  const quotes = payload?.quotes;
+  if (!quotes || typeof quotes !== "object") return;
+
+  Object.entries(quotes).forEach(([symbol, quote]) => rememberMarketQuote(symbol, quote));
+  renderWatchlist(window.__lastMtWatchlist || []);
+  if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
+}
+
 function updateMarketSnapshotsFromMap(data) {
   if (!data || typeof data !== "object") return;
   Object.entries(data).forEach(([symbol, payload]) => rememberMarketSnapshot(symbol, payload));
@@ -563,6 +641,9 @@ function renderMarketWatchModal(symbol = marketModalSymbol) {
   const signalText = parseSignalText(snapshot);
   const score = Number(snapshot.score);
   const price = signalPriceFromPayload(snapshot, NaN);
+  const bid = Number(snapshot.bid);
+  const ask = Number(snapshot.ask);
+  const dailyChangePct = parseDailyChangePct(snapshot);
   const sl = Number(snapshot.sl ?? snapshot.ict?.sl ?? NaN);
   const tp = Number(snapshot.tp ?? snapshot.ict?.tp ?? NaN);
 
@@ -571,16 +652,28 @@ function renderMarketWatchModal(symbol = marketModalSymbol) {
   set("market-modal-signal", signalText);
   set("market-modal-score", Number.isFinite(score) ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : "-");
   set("market-modal-price", Number.isFinite(price) && price > 0 ? formatPrice(price) : "-");
+  set("market-modal-bid", Number.isFinite(bid) && bid > 0 ? formatPrice(bid) : "-");
+  set("market-modal-ask", Number.isFinite(ask) && ask > 0 ? formatPrice(ask) : "-");
+  set("market-modal-daily-change", formatDailyChange(dailyChangePct));
   set("market-modal-sl", Number.isFinite(sl) && sl > 0 ? formatPrice(sl) : "-");
   set("market-modal-tp", Number.isFinite(tp) && tp > 0 ? formatPrice(tp) : "-");
   set("market-modal-updated", formatSnapshotTime(snapshot.timestamp || snapshot.__cached_at));
+
+  const changeEl = $("market-modal-daily-change");
+  if (changeEl) {
+    changeEl.classList.remove("market-tick-up", "market-tick-down");
+    if (Number.isFinite(dailyChangePct)) {
+      if (dailyChangePct > 0) changeEl.classList.add("market-tick-up");
+      else if (dailyChangePct < 0) changeEl.classList.add("market-tick-down");
+    }
+  }
 
   const ticks = marketTickStore[sym] || [];
   const tb = $("market-modal-ticks-tbody");
   if (!tb) return;
 
   if (!ticks.length) {
-    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:14px;color:#888">No ticks yet for this market</td></tr>';
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:14px;color:#888">No ticks yet for this market</td></tr>';
     return;
   }
 
@@ -589,7 +682,9 @@ function renderMarketWatchModal(symbol = marketModalSymbol) {
     const delta = next ? Number(tick.price) - Number(next.price) : NaN;
     const deltaText = Number.isFinite(delta) ? `${delta >= 0 ? "+" : "-"}${formatPrice(Math.abs(delta))}` : "--";
     const deltaClass = !Number.isFinite(delta) ? "" : delta > 0 ? "market-tick-up" : delta < 0 ? "market-tick-down" : "";
-    return `<tr><td>${formatSnapshotTime(tick.ts)}</td><td>${formatPrice(tick.price)}</td><td class="${deltaClass}">${deltaText}</td><td>${tick.signal || "-"}</td></tr>`;
+    const tickBid = Number(tick.bid);
+    const tickAsk = Number(tick.ask);
+    return `<tr><td>${formatSnapshotTime(tick.ts)}</td><td>${Number.isFinite(tickBid) && tickBid > 0 ? formatPrice(tickBid) : "--"}</td><td>${Number.isFinite(tickAsk) && tickAsk > 0 ? formatPrice(tickAsk) : "--"}</td><td>${formatPrice(tick.price)}</td><td class="${deltaClass}">${deltaText}</td></tr>`;
   }).join("");
 }
 
@@ -599,6 +694,7 @@ function openMarketWatchModal(symbol) {
   marketModalSymbol = sym;
   renderMarketWatchModal(sym);
   $("market-watch-modal")?.classList.add("open");
+  if (isConnected) loadWatchQuotes([sym]);
 }
 
 function closeMarketWatchModal() {
@@ -735,7 +831,7 @@ async function placeManualTrade(side) {
   const useSl = !!$("manual-use-sl")?.checked;
   const useTp = !!$("manual-use-tp")?.checked;
   const trailingStart = Number($("manual-trailing-start")?.value || 0.5);
-  const trailingStep = Number($("manual-trailing-step")?.value || 0.5);
+  const trailingStep = Number($("manual-trailing-step")?.value || 0.2);
 
   const riskWarning = "Manual trading is at your own risk. Rule #1: Risk management first. Continue?";
   if (!window.confirm(riskWarning)) return;
@@ -803,7 +899,14 @@ function renderWatchlist(symbols = []) {
       const scoreText = Number.isFinite(score) ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : "--";
       const price = signalPriceFromPayload(snapshot, NaN);
       const priceText = Number.isFinite(price) && price > 0 ? formatPrice(price) : "--";
-      return `<button class="watchlist-chip ${active}" type="button" data-watch-symbol="${sym}"><span class="watchlist-chip-top"><span class="watchlist-chip-symbol">${sym}</span><span class="watchlist-chip-state ${signalClass}">${signalText}</span></span><span class="watchlist-chip-meta"><span>${source}</span><strong>${priceText}</strong></span><small>Confidence ${scoreText}</small></button>`;
+      const bid = Number(snapshot.bid);
+      const ask = Number(snapshot.ask);
+      const bidText = Number.isFinite(bid) && bid > 0 ? formatPrice(bid) : "--";
+      const askText = Number.isFinite(ask) && ask > 0 ? formatPrice(ask) : "--";
+      const changePct = parseDailyChangePct(snapshot);
+      const changeClass = dailyChangeClassName(changePct);
+      const changeText = formatDailyChange(changePct);
+      return `<button class="watchlist-chip ${active}" type="button" data-watch-symbol="${sym}"><span class="watchlist-chip-top"><span class="watchlist-chip-symbol">${sym}</span><span class="watchlist-chip-state ${signalClass}">${signalText}</span></span><span class="watchlist-chip-meta"><span>${source}</span><strong>${priceText}</strong></span><span class="watchlist-chip-quote"><span>B ${bidText}</span><span>A ${askText}</span><span class="${changeClass}">${changeText}</span></span><small>Confidence ${scoreText}</small></button>`;
     }).join("");
 
   ["market-watchlist", "market-watchlist-section"].forEach(id => {
@@ -838,6 +941,7 @@ async function refreshMarketWatchSection() {
   }
 
   await loadStatus();
+  await loadWatchQuotes(window.__lastMtWatchlist || [], { force: true });
   if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
   addLog("MT5 Market Watch refreshed", "success");
 }
@@ -879,6 +983,16 @@ async function api(ep) {
         setTimeout(() => connectBridge({ silent: true }), 1500);
       }
     }
+    return null;
+  }
+}
+
+async function apiQuiet(ep, opts = {}) {
+  if (!isConnected) return null;
+  try {
+    const timeout = Number(opts.timeout || 5000);
+    return await fetchJson(BRIDGE + ep, { timeout });
+  } catch {
     return null;
   }
 }
@@ -1059,6 +1173,7 @@ async function loadStatus() {
   const selectedSource = String(st.selected_symbol_source || health?.selected_symbol_source || "default").toLowerCase();
   const watchlist = st.mt_watchlist || health?.mt_watchlist || [];
   renderWatchlist(watchlist);
+  loadWatchQuotes(watchlist);
 
   if (backendSymbol) {
     if (autoSymbolSync && Date.now() > manualSymbolLockUntil && latestMtSymbol && latestMtSymbol !== currentSymbol) {
@@ -1382,13 +1497,13 @@ async function loadServerLog() {
 async function loadIntegrationStatus() {
   const [data, guardian, wired, knowledge, agentic, orchestrator, observability, reflection] = await Promise.all([
     api("/integrations/status"),
-    api("/guardian/summary"),
-    api("/wired/system/status"),
-    api("/knowledge/status"),
-    api("/agentic/status"),
-    api("/orchestrator/status"),
-    api("/observability/summary"),
-    api("/reflection/status"),
+    apiQuiet("/guardian/summary"),
+    apiQuiet("/wired/system/status"),
+    apiQuiet("/knowledge/status"),
+    apiQuiet("/agentic/status"),
+    apiQuiet("/orchestrator/status"),
+    apiQuiet("/observability/summary"),
+    apiQuiet("/reflection/status"),
   ]);
   if (!data) return;
   set("int-telegram-status", data.telegram_configured ? "READY" : "SET TOKEN");
@@ -1946,6 +2061,7 @@ function initMarketWatchModal() {
     if (marketModalSymbol) {
       const payload = await api(`/signal?symbol=${encodeURIComponent(marketModalSymbol)}`);
       if (payload) updateMarketSnapshotsFromMap({ [marketModalSymbol]: payload });
+      await loadWatchQuotes([marketModalSymbol], { force: true });
       renderMarketWatchModal(marketModalSymbol);
     }
   });

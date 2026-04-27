@@ -211,7 +211,7 @@
                 <label class="settings-check"><input id="manual-use-tp" type="checkbox" checked /><span>Use TP line</span></label>
                 <div class="grid-2 compact-grid">
                   <div class="form-group"><label class="form-label">Trailing Starts At RR</label><input class="form-input" id="manual-trailing-start" type="number" step="0.1" value="0.5" /></div>
-                  <div class="form-group"><label class="form-label">Trailing Step RR</label><input class="form-input" id="manual-trailing-step" type="number" step="0.1" value="0.5" /></div>
+                  <div class="form-group"><label class="form-label">Trailing Stop Multi RR</label><input class="form-input" id="manual-trailing-step" type="number" step="0.1" value="0.2" /></div>
                 </div>
                 <div class="btn-row">
                   <button class="btn btn-primary" id="manual-buy-btn">Place Buy</button>
@@ -596,6 +596,9 @@
             <div><span class="settings-k">Signal</span><strong id="market-modal-signal">-</strong></div>
             <div><span class="settings-k">Score</span><strong id="market-modal-score">-</strong></div>
             <div><span class="settings-k">Price</span><strong id="market-modal-price">-</strong></div>
+            <div><span class="settings-k">Bid</span><strong id="market-modal-bid">-</strong></div>
+            <div><span class="settings-k">Ask</span><strong id="market-modal-ask">-</strong></div>
+            <div><span class="settings-k">Daily Change</span><strong id="market-modal-daily-change">-</strong></div>
             <div><span class="settings-k">SL</span><strong id="market-modal-sl">-</strong></div>
             <div><span class="settings-k">TP</span><strong id="market-modal-tp">-</strong></div>
             <div><span class="settings-k">Updated</span><strong id="market-modal-updated">-</strong></div>
@@ -610,7 +613,7 @@
           <div class="table-wrap market-ticks-wrap">
             <table class="data-table market-ticks-table">
               <thead>
-                <tr><th>Time</th><th>Price</th><th>Delta</th><th>Signal</th></tr>
+                <tr><th>Time</th><th>Bid</th><th>Ask</th><th>Mid</th><th>Delta</th></tr>
               </thead>
               <tbody id="market-modal-ticks-tbody"></tbody>
             </table>
