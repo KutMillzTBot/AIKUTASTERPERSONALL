@@ -871,11 +871,46 @@ body::before {
 }
 
 .chart-lower-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   align-items: start;
 }
 
 .manual-trade-panel {
   min-height: 100%;
+}
+
+.manual-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.manual-summary-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(99, 132, 255, 0.08);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.manual-summary-item span {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.manual-summary-item strong {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.manual-preset-row .btn {
+  min-width: 92px;
 }
 
 .manual-ticket-grid {
@@ -978,11 +1013,12 @@ body::before {
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  font-family: var(--mono);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
+  display: grid;
+  gap: 6px;
 }
 
 .watchlist-chip:hover,
@@ -993,9 +1029,62 @@ body::before {
   box-shadow: var(--glow-accent);
 }
 
+.watchlist-chip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.watchlist-chip-symbol {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.watchlist-chip-state {
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+}
+
+.watchlist-chip-state.buy {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green);
+  border-color: rgba(16, 185, 129, 0.32);
+}
+
+.watchlist-chip-state.sell {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.watchlist-chip-state.hold {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--yellow);
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+.watchlist-chip-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.watchlist-chip-meta strong {
+  font-family: var(--mono);
+  color: var(--text-sec);
+}
+
 .watchlist-chip small {
   display: block;
-  margin-top: 4px;
   color: var(--text-muted);
   font-family: var(--sans);
   font-size: 10px;
@@ -1104,6 +1193,69 @@ body::before {
   line-height: 1.7;
 }
 
+.market-watch-modal-card {
+  width: min(980px, 100%);
+}
+
+.market-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 14px;
+}
+
+.market-modal-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(99, 132, 255, 0.04);
+  padding: 12px;
+}
+
+.market-modal-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.2px;
+}
+
+.market-modal-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.market-modal-detail-grid > div {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(7, 10, 18, 0.8);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.market-modal-detail-grid strong {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.market-ticks-wrap {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.market-ticks-table td {
+  font-family: var(--mono);
+}
+
+.market-tick-up {
+  color: var(--green);
+}
+
+.market-tick-down {
+  color: var(--red);
+}
+
 @media(max-width:900px) {
   .nav-symbol-stack {
     min-width: 0;
@@ -1115,10 +1267,25 @@ body::before {
   .settings-state-grid {
     grid-template-columns: 1fr;
   }
+  .manual-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .manual-ticket-grid {
+    grid-template-columns: 1fr;
+  }
+  .market-modal-grid {
+    grid-template-columns: 1fr;
+  }
+  .market-modal-detail-grid {
     grid-template-columns: 1fr;
   }
   #deriv-chart-frame {
     height: 560px;
+  }
+}
+
+@media(max-width:600px) {
+  .manual-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

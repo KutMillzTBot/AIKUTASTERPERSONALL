@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="default-bridge" content="https://description-dollars-prove-living.trycloudflare.com" />
+  <meta name="default-bridge" content="https://equipped-flashing-ant-exhibitions.trycloudflare.com" />
   <title>SupervisorTrainer Command Center v6</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -174,14 +174,16 @@
           <iframe id="deriv-chart-frame" title="Deriv Chart" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
         <div class="manual-warning">Manual trading is at your own risk. Rule #1: risk management first.</div>
-        <div class="grid-2 chart-lower-grid" style="margin-top:12px">
-          <div class="card">
-            <div class="card-header"><div class="card-title">MT5 Market Watch</div></div>
-            <p class="chart-note">Fetched from your MT5 Market Watch. Startup now follows the attached MT5 chart symbol, while your own click stays pinned instead of getting hijacked by refreshes.</p>
-            <div id="market-watchlist" class="watchlist-grid"></div>
-          </div>
+        <div class="chart-lower-grid" style="margin-top:12px">
           <div class="card manual-trade-panel">
-            <div class="card-header"><div class="card-title">Unified Buy / Sell Panel</div></div>
+            <div class="card-header"><div class="card-title">Execution Ticket Pro</div></div>
+            <p class="chart-note">Manual execution for the pinned symbol. Live reference price and risk/reward update automatically as the market moves.</p>
+            <div class="manual-summary-grid">
+              <div class="manual-summary-item"><span>Symbol</span><strong id="manual-summary-symbol">-</strong></div>
+              <div class="manual-summary-item"><span>Reference</span><strong id="manual-summary-price">-</strong></div>
+              <div class="manual-summary-item"><span>Order Type</span><strong id="manual-summary-order">BUY MARKET</strong></div>
+              <div class="manual-summary-item"><span>Risk/Reward</span><strong id="manual-summary-rr">-</strong></div>
+            </div>
             <div class="manual-ticket-grid">
               <div class="manual-ticket-fields">
                 <div class="grid-2 compact-grid">
@@ -193,6 +195,11 @@
                   <button class="btn btn-ghost" id="manual-arm-sl-btn">Arm SL</button>
                   <button class="btn btn-ghost" id="manual-arm-tp-btn">Arm TP</button>
                   <button class="btn btn-ghost" id="manual-reset-lines-btn">Reset Lines</button>
+                </div>
+                <div class="btn-row manual-preset-row">
+                  <button class="btn btn-ghost btn-sm" id="manual-preset-scalp-btn">Scalp</button>
+                  <button class="btn btn-ghost btn-sm" id="manual-preset-intraday-btn">Intraday</button>
+                  <button class="btn btn-ghost btn-sm" id="manual-preset-swing-btn">Swing</button>
                 </div>
                 <p class="chart-note">Use Entry as the stop trigger. For stop-limit orders, Limit Price is the resting limit that appears after the stop trigger is touched.</p>
                 <div class="form-group"><label class="form-label">Side</label><input class="form-input" id="manual-side-label" value="BUY" readonly /></div>
@@ -242,7 +249,7 @@
           <div class="card-title">MT5 Market Watch</div>
           <button class="btn btn-ghost btn-sm" id="market-watch-refresh-btn">Refresh Watchlist</button>
         </div>
-        <p class="chart-note">Fetched from your attached MT5 Market Watch. Click any market here to switch the main chart, signal stack, and manual trading panel without the dropdown getting hijacked.</p>
+        <p class="chart-note">Fetched from your attached MT5 Market Watch. Click any market to open a live popup with market details and tick stream, then pin it to chart when needed.</p>
         <div class="settings-state-grid market-watch-meta-grid">
           <div><span class="settings-k">Watchlist Source</span><strong id="market-watch-source">Waiting for MT5</strong></div>
           <div><span class="settings-k">Attached Chart Symbol</span><strong id="market-watch-source-symbol">—</strong></div>
@@ -572,6 +579,44 @@
         <button class="btn btn-ghost btn-sm" id="model-info-close-btn">Close</button>
       </div>
       <p id="model-info-body" class="modal-body"></p>
+    </div>
+  </div>
+
+  <div id="market-watch-modal" class="modal-backdrop">
+    <div class="modal-card market-watch-modal-card">
+      <div class="modal-header">
+        <h3 id="market-modal-title">Market Snapshot</h3>
+        <button class="btn btn-ghost btn-sm" id="market-watch-modal-close-btn">Close</button>
+      </div>
+      <div class="market-modal-grid">
+        <div class="market-modal-panel">
+          <div class="market-modal-panel-title">Market Details</div>
+          <div class="market-modal-detail-grid">
+            <div><span class="settings-k">Symbol</span><strong id="market-modal-symbol">-</strong></div>
+            <div><span class="settings-k">Signal</span><strong id="market-modal-signal">-</strong></div>
+            <div><span class="settings-k">Score</span><strong id="market-modal-score">-</strong></div>
+            <div><span class="settings-k">Price</span><strong id="market-modal-price">-</strong></div>
+            <div><span class="settings-k">SL</span><strong id="market-modal-sl">-</strong></div>
+            <div><span class="settings-k">TP</span><strong id="market-modal-tp">-</strong></div>
+            <div><span class="settings-k">Updated</span><strong id="market-modal-updated">-</strong></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" id="market-modal-pin-btn">Pin To Chart</button>
+            <button class="btn btn-ghost btn-sm" id="market-modal-refresh-btn">Refresh Data</button>
+          </div>
+        </div>
+        <div class="market-modal-panel">
+          <div class="market-modal-panel-title">Live Ticks</div>
+          <div class="table-wrap market-ticks-wrap">
+            <table class="data-table market-ticks-table">
+              <thead>
+                <tr><th>Time</th><th>Price</th><th>Delta</th><th>Signal</th></tr>
+              </thead>
+              <tbody id="market-modal-ticks-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

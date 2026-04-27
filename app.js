@@ -64,6 +64,9 @@ let refreshQueued = false;
 let lastHeavyRefreshAt = 0;
 let manualSymbolLockUntil = 0;
 let latestMtSymbol = "";
+let marketModalSymbol = "";
+const marketSignalCache = {};
+const marketTickStore = {};
 
 const MODEL_EXPLAIN = {
   candle_patterns: "Reads candle structure and reversal/continuation formations to improve entry timing.",
@@ -195,6 +198,8 @@ function bridgeCandidates(raw) {
 
   push(raw);
   push(BRIDGE);
+  push(readBridgeMetaPreset());
+  push(inferBridgeFromHost());
   push(DEFAULT_BRIDGE);
 
   try {
@@ -390,6 +395,8 @@ function applySymbol(symbol, { fromBackend = false, persist = true, manualIntent
   renderDerivChart(currentSymbol);
   renderWatchlist(window.__lastMtWatchlist || []);
   updateSymbolStatusUI();
+  updateManualSummary();
+  if (marketModalSymbol === currentSymbol) renderMarketWatchModal(currentSymbol);
 
   if (!fromBackend && isConnected) {
     post("/trading/symbol", { symbol: currentSymbol });
@@ -412,6 +419,191 @@ function formatPrice(v) {
   if (Math.abs(n) >= 1000) return n.toFixed(2);
   if (Math.abs(n) >= 1) return n.toFixed(5);
   return n.toFixed(6);
+}
+
+function signalPriceFromPayload(payload, fallback = NaN) {
+  const d = payload && typeof payload === "object" ? payload : {};
+  const bid = Number(d.bid);
+  const ask = Number(d.ask);
+  if (Number.isFinite(bid) && bid > 0 && Number.isFinite(ask) && ask > 0) {
+    return (bid + ask) / 2;
+  }
+  const candidates = [
+    d.last_price,
+    d.price,
+    d.current_price,
+    d.entry,
+    d.ob50,
+    d.ob_50,
+    d.ict?.ob50,
+  ];
+  for (const value of candidates) {
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const fb = Number(fallback);
+  return Number.isFinite(fb) ? fb : NaN;
+}
+
+function formatSnapshotTime(raw) {
+  if (!raw) return "-";
+  const dt = new Date(raw);
+  if (Number.isNaN(dt.getTime())) return String(raw);
+  return dt.toLocaleTimeString();
+}
+
+function signalClassName(signalText) {
+  const s = parseSignalText({ signal: signalText });
+  if (s.includes("BUY")) return "buy";
+  if (s.includes("SELL")) return "sell";
+  return "hold";
+}
+
+function updateManualSummary() {
+  set("manual-summary-symbol", currentSymbol || "-");
+  set("manual-summary-order", String(manualOrderType || "-").replaceAll("_", " "));
+  if (Number.isFinite(lastPrice) && lastPrice > 0) {
+    set("manual-summary-price", formatPrice(lastPrice));
+  } else {
+    set("manual-summary-price", "-");
+  }
+
+  const entry = Number($("manual-entry")?.value || lastPrice || 0);
+  const sl = Number($("manual-sl")?.value || 0);
+  const tp = Number($("manual-tp")?.value || 0);
+  const riskDist = Math.abs(entry - sl);
+  const rewardDist = Math.abs(tp - entry);
+  const tick = manualTickSize();
+
+  if (Number.isFinite(riskDist) && riskDist > 0 && Number.isFinite(rewardDist) && rewardDist >= 0) {
+    const rr = rewardDist / riskDist;
+    const riskTicks = Math.max(0, Math.round(riskDist / tick));
+    const rewardTicks = Math.max(0, Math.round(rewardDist / tick));
+    set("manual-summary-rr", `1:${rr.toFixed(2)} (${riskTicks}/${rewardTicks}t)`);
+  } else {
+    set("manual-summary-rr", "-");
+  }
+}
+
+function applyManualPreset(kind = "intraday") {
+  if (!Number.isFinite(lastPrice) || lastPrice <= 0) {
+    addLog("Waiting for live price before applying preset", "warn");
+    return;
+  }
+
+  const presets = {
+    scalp: { sl: 10, tp: 16 },
+    intraday: { sl: 20, tp: 34 },
+    swing: { sl: 45, tp: 90 },
+  };
+  const preset = presets[kind] || presets.intraday;
+  const side = currentManualSideFromType(manualOrderType);
+  const tick = manualTickSize();
+  const entry = orderTypeNeedsPendingEntry(manualOrderType)
+    ? Number($("manual-entry")?.value || lastPrice)
+    : lastPrice;
+
+  const sl = side === "BUY" ? entry - tick * preset.sl : entry + tick * preset.sl;
+  const tp = side === "BUY" ? entry + tick * preset.tp : entry - tick * preset.tp;
+  if ($("manual-entry")) $("manual-entry").value = formatPrice(entry);
+  if ($("manual-sl")) $("manual-sl").value = formatPrice(sl);
+  if ($("manual-tp")) $("manual-tp").value = formatPrice(tp);
+
+  if (orderTypeUsesLimitPrice(manualOrderType) && $("manual-limit-price")) {
+    const limitOffset = side === "BUY" ? -tick * 10 : tick * 10;
+    $("manual-limit-price").value = formatPrice(entry + limitOffset);
+  }
+
+  syncDragLinesFromInputs();
+  updateManualSummary();
+  addLog(`${kind} preset loaded for ${manualOrderType.replaceAll("_", " ")}`, "info");
+}
+
+function rememberMarketSnapshot(symbol, payload) {
+  const sym = normalizeMarketSymbol(symbol);
+  if (!sym || !payload || typeof payload !== "object") return;
+
+  marketSignalCache[sym] = {
+    ...marketSignalCache[sym],
+    ...payload,
+    symbol: sym,
+    __cached_at: payload.timestamp || new Date().toISOString(),
+  };
+
+  const price = signalPriceFromPayload(payload, NaN);
+  if (!Number.isFinite(price) || price <= 0) return;
+
+  const timestamp = payload.timestamp || new Date().toISOString();
+  const bucket = marketTickStore[sym] || [];
+  const latest = bucket[0];
+  if (latest && latest.ts === timestamp && Number(latest.price) === Number(price)) return;
+
+  bucket.unshift({
+    ts: timestamp,
+    price,
+    signal: parseSignalText(payload),
+    score: Number(payload.score || 0),
+  });
+  if (bucket.length > 80) bucket.length = 80;
+  marketTickStore[sym] = bucket;
+}
+
+function updateMarketSnapshotsFromMap(data) {
+  if (!data || typeof data !== "object") return;
+  Object.entries(data).forEach(([symbol, payload]) => rememberMarketSnapshot(symbol, payload));
+  renderWatchlist(window.__lastMtWatchlist || []);
+  if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
+}
+
+function renderMarketWatchModal(symbol = marketModalSymbol) {
+  const sym = normalizeMarketSymbol(symbol);
+  if (!sym) return;
+
+  const snapshot = marketSignalCache[sym] || {};
+  const signalText = parseSignalText(snapshot);
+  const score = Number(snapshot.score);
+  const price = signalPriceFromPayload(snapshot, NaN);
+  const sl = Number(snapshot.sl ?? snapshot.ict?.sl ?? NaN);
+  const tp = Number(snapshot.tp ?? snapshot.ict?.tp ?? NaN);
+
+  set("market-modal-title", `${sym} Snapshot`);
+  set("market-modal-symbol", sym);
+  set("market-modal-signal", signalText);
+  set("market-modal-score", Number.isFinite(score) ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : "-");
+  set("market-modal-price", Number.isFinite(price) && price > 0 ? formatPrice(price) : "-");
+  set("market-modal-sl", Number.isFinite(sl) && sl > 0 ? formatPrice(sl) : "-");
+  set("market-modal-tp", Number.isFinite(tp) && tp > 0 ? formatPrice(tp) : "-");
+  set("market-modal-updated", formatSnapshotTime(snapshot.timestamp || snapshot.__cached_at));
+
+  const ticks = marketTickStore[sym] || [];
+  const tb = $("market-modal-ticks-tbody");
+  if (!tb) return;
+
+  if (!ticks.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:14px;color:#888">No ticks yet for this market</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = ticks.slice(0, 25).map((tick, idx) => {
+    const next = ticks[idx + 1];
+    const delta = next ? Number(tick.price) - Number(next.price) : NaN;
+    const deltaText = Number.isFinite(delta) ? `${delta >= 0 ? "+" : "-"}${formatPrice(Math.abs(delta))}` : "--";
+    const deltaClass = !Number.isFinite(delta) ? "" : delta > 0 ? "market-tick-up" : delta < 0 ? "market-tick-down" : "";
+    return `<tr><td>${formatSnapshotTime(tick.ts)}</td><td>${formatPrice(tick.price)}</td><td class="${deltaClass}">${deltaText}</td><td>${tick.signal || "-"}</td></tr>`;
+  }).join("");
+}
+
+function openMarketWatchModal(symbol) {
+  const sym = normalizeMarketSymbol(symbol);
+  if (!sym) return;
+  marketModalSymbol = sym;
+  renderMarketWatchModal(sym);
+  $("market-watch-modal")?.classList.add("open");
+}
+
+function closeMarketWatchModal() {
+  marketModalSymbol = "";
+  $("market-watch-modal")?.classList.remove("open");
 }
 
 function currentManualSideFromType(type = manualOrderType) {
@@ -437,6 +629,7 @@ function updateManualModeUI() {
     : `${manualSide} market: entry stays at live price while you drag SL / TP around it.`);
   ["drag-entry-line", "drag-sl-line", "drag-tp-line"].forEach(id => $(id)?.classList.remove("is-armed"));
   $(`drag-${manualDragTarget}-line`)?.classList.add("is-armed");
+  updateManualSummary();
 }
 
 function setManualLevels(entry, sl, tp) {
@@ -445,6 +638,7 @@ function setManualLevels(entry, sl, tp) {
   if ($("manual-entry")) $("manual-entry").value = formatPrice(entry);
   if ($("manual-sl")) $("manual-sl").value = formatPrice(sl);
   if ($("manual-tp")) $("manual-tp").value = formatPrice(tp);
+  updateManualSummary();
 }
 
 function seedManualLevels(side = manualSide) {
@@ -495,6 +689,7 @@ function syncInputsFromDragLines() {
     const limitOffset = manualSide === "BUY" ? -manualTickSize() * 10 : manualTickSize() * 10;
     $("manual-limit-price").value = formatPrice(entryPrice + limitOffset);
   }
+  updateManualSummary();
 }
 
 function setupDragLine(id) {
@@ -601,7 +796,14 @@ function renderWatchlist(symbols = []) {
       const sym = normalizeMarketSymbol(symbol);
       const active = sym === currentSymbol ? "active" : "";
       const source = sym === latestMtSymbol ? "MT chart" : "Watchlist";
-      return `<button class="watchlist-chip ${active}" type="button" data-watch-symbol="${sym}">${sym}<small>${source}</small></button>`;
+      const snapshot = marketSignalCache[sym] || {};
+      const signalText = parseSignalText(snapshot);
+      const signalClass = signalClassName(signalText);
+      const score = Number(snapshot.score);
+      const scoreText = Number.isFinite(score) ? `${Math.round(Math.max(0, Math.min(1, score)) * 100)}%` : "--";
+      const price = signalPriceFromPayload(snapshot, NaN);
+      const priceText = Number.isFinite(price) && price > 0 ? formatPrice(price) : "--";
+      return `<button class="watchlist-chip ${active}" type="button" data-watch-symbol="${sym}"><span class="watchlist-chip-top"><span class="watchlist-chip-symbol">${sym}</span><span class="watchlist-chip-state ${signalClass}">${signalText}</span></span><span class="watchlist-chip-meta"><span>${source}</span><strong>${priceText}</strong></span><small>Confidence ${scoreText}</small></button>`;
     }).join("");
 
   ["market-watchlist", "market-watchlist-section"].forEach(id => {
@@ -616,8 +818,11 @@ function bindWatchlistHost(id) {
   $(id)?.addEventListener("click", ev => {
     const btn = ev.target.closest("[data-watch-symbol]");
     if (!btn) return;
-    applySymbol(btn.dataset.watchSymbol, { fromBackend: false, persist: true, manualIntent: true });
-    addLog(`Pinned watchlist symbol ${btn.dataset.watchSymbol}`, "info");
+    const symbol = normalizeMarketSymbol(btn.dataset.watchSymbol);
+    if (!symbol) return;
+    applySymbol(symbol, { fromBackend: false, persist: true, manualIntent: true });
+    openMarketWatchModal(symbol);
+    addLog(`Pinned watchlist symbol ${symbol}`, "info");
     if (isConnected) {
       loadSignal();
       loadPositions();
@@ -633,6 +838,7 @@ async function refreshMarketWatchSection() {
   }
 
   await loadStatus();
+  if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
   addLog("MT5 Market Watch refreshed", "success");
 }
 
@@ -910,11 +1116,16 @@ async function loadStatus() {
     set("acc-margin", fmtUsd(acc.margin || 0));
     set("acc-marginlevel", `${Number(acc.margin_level || 0).toFixed(1)}%`);
   }
+
+  updateManualSummary();
+  if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
 }
 
 async function loadSignal() {
   const d = await api(`/signal?symbol=${encodeURIComponent(currentSymbol)}`);
   if (!d) return;
+  const signalSymbol = normalizeMarketSymbol(d.symbol || currentSymbol) || currentSymbol;
+  updateMarketSnapshotsFromMap({ [signalSymbol]: d });
 
   const sigText = parseSignalText(d);
   const score = Number(d.score || 0);
@@ -965,6 +1176,8 @@ async function loadSignal() {
         return `<div class="weight-row"><div class="weight-name">${m}</div><div class="weight-bar"><div class="weight-fill" style="width:${w}%;background:var(--accent)"></div></div><div class="weight-pct">${w}%</div></div>`;
       }).join("");
   }
+  updateManualSummary();
+  if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
 }
 
 async function loadRisk() {
@@ -1706,6 +1919,38 @@ function initModelModal() {
   });
 }
 
+function initMarketWatchModal() {
+  const modal = $("market-watch-modal");
+  if (!modal) return;
+
+  $("market-watch-modal-close-btn")?.addEventListener("click", closeMarketWatchModal);
+  modal.addEventListener("click", ev => {
+    if (ev.target === modal) closeMarketWatchModal();
+  });
+
+  $("market-modal-pin-btn")?.addEventListener("click", async () => {
+    if (!marketModalSymbol) return;
+    applySymbol(marketModalSymbol, { fromBackend: false, persist: true, manualIntent: true });
+    addLog(`Pinned ${marketModalSymbol} from market popup`, "info");
+    if (isConnected) {
+      await loadSignal();
+      await loadPositions();
+    }
+  });
+
+  $("market-modal-refresh-btn")?.addEventListener("click", async () => {
+    if (!isConnected) {
+      addLog("Connect backend before refreshing market popup", "warn");
+      return;
+    }
+    if (marketModalSymbol) {
+      const payload = await api(`/signal?symbol=${encodeURIComponent(marketModalSymbol)}`);
+      if (payload) updateMarketSnapshotsFromMap({ [marketModalSymbol]: payload });
+      renderMarketWatchModal(marketModalSymbol);
+    }
+  });
+}
+
 function initManualTradingPanel() {
   ["drag-entry-line", "drag-sl-line", "drag-tp-line"].forEach(id => {
     const el = $(id);
@@ -1736,6 +1981,9 @@ function initManualTradingPanel() {
   });
 
   $("manual-reset-lines-btn")?.addEventListener("click", () => seedManualLevels(manualSide));
+  $("manual-preset-scalp-btn")?.addEventListener("click", () => applyManualPreset("scalp"));
+  $("manual-preset-intraday-btn")?.addEventListener("click", () => applyManualPreset("intraday"));
+  $("manual-preset-swing-btn")?.addEventListener("click", () => applyManualPreset("swing"));
   $("manual-buy-btn")?.addEventListener("click", async () => {
     manualSide = "BUY";
     manualOrderType = String($("manual-order-type")?.value || "BUY_MARKET").replace(/^SELL/, "BUY");
@@ -1754,21 +2002,23 @@ function initManualTradingPanel() {
   $("manual-sl")?.addEventListener("change", syncDragLinesFromInputs);
   $("manual-tp")?.addEventListener("change", syncDragLinesFromInputs);
   $("manual-limit-price")?.addEventListener("change", syncDragLinesFromInputs);
+  $("manual-lot")?.addEventListener("change", updateManualSummary);
   $("manual-entry")?.addEventListener("change", () => {
     const val = Number($("manual-entry")?.value || lastPrice || 0);
     if (Number.isFinite(val) && val > 0) {
       if (orderTypeNeedsPendingEntry(manualOrderType)) lastPrice = val;
       syncDragLinesFromInputs();
+      updateManualSummary();
     }
   });
 
-  bindWatchlistHost("market-watchlist");
   bindWatchlistHost("market-watchlist-section");
   $("market-watch-refresh-btn")?.addEventListener("click", refreshMarketWatchSection);
 
   if ($("manual-side-label")) $("manual-side-label").value = manualSide;
   if ($("manual-order-type")) $("manual-order-type").value = manualOrderType;
   updateManualModeUI();
+  updateManualSummary();
   setTimeout(() => seedManualLevels(manualSide), 120);
 }
 
@@ -1788,6 +2038,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initSettings();
   bindBridgeDisplay();
   initModelModal();
+  initMarketWatchModal();
   initManualTradingPanel();
   initIntegrationsPanel();
   syncForexSmartBotSection();
