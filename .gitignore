@@ -1,0 +1,12 @@
+*
+!.gitignore
+!index.html
+!command_center.html
+!style.css
+!app.js
+!ForexSmartBot/
+ForexSmartBot/*
+ForexSmartBot/build_simple.py
+!ForexSmartBot/forexsmartbot_dashboard.html
+!ForexSmartBot/forexsmartbot_dashboard.css
+!ForexSmartBot/forexsmartbot_dashboard.js
