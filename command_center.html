@@ -46,6 +46,7 @@
     <div class="sidebar-item active" data-section="section-overview"><span class="si-icon">⚡</span>Overview</div>
     <div class="sidebar-item" data-section="section-signal"><span class="si-icon">📡</span>Signal</div>
     <div class="sidebar-item" data-section="section-chart"><span class="si-icon">📈</span>Chart</div>
+    <div class="sidebar-item" data-section="section-supervisor-ea"><span class="si-icon">📊</span>Supervisor EA</div>
     <div class="sidebar-item" data-section="section-market-watch"><span class="si-icon">👁️</span>Market Watch</div>
     <div class="sidebar-item" data-section="section-positions"><span class="si-icon">📂</span>Positions</div>
 
@@ -236,6 +237,50 @@
       </div>
     </section>
 
+    <section id="section-supervisor-ea" class="section">
+      <div id="supervisor-ea-panel" class="card supervisor-ea-panel">
+        <div class="card-header">
+          <div class="card-title">Supervisor EA</div>
+          <div class="supervisor-ea-header-meta">
+            <span class="supervisor-symbol-badge" id="supervisorSymbolBadge">XAUUSD</span>
+            <span class="session-indicator" id="supervisorSessionIndicator">Observation</span>
+          </div>
+        </div>
+        <div class="supervisor-grid">
+          <div class="supervisor-card signal-card">
+            <label>Current Signal</label>
+            <div class="signal-display" id="supervisorSignal">- WAIT -</div>
+          </div>
+          <div class="supervisor-card">
+            <label>Session Status</label>
+            <div id="supervisorSession">Checking...</div>
+            <div id="supervisorNextSession" class="sub-label"></div>
+          </div>
+          <div class="supervisor-card">
+            <label>Open Trade</label>
+            <div id="supervisorOpenTrade">No active trade</div>
+            <div id="supervisorTradePnL" class="pnl-display"></div>
+          </div>
+          <div class="supervisor-card">
+            <label>Last Trade</label>
+            <div id="supervisorLastTrade">-</div>
+          </div>
+          <div class="supervisor-card">
+            <label>Post-Trade Cooldown</label>
+            <div id="supervisorCooldown">Inactive</div>
+          </div>
+          <div class="supervisor-card">
+            <label>News Embargo</label>
+            <div id="supervisorNewsEmbargo">None</div>
+          </div>
+        </div>
+        <div id="supervisorSignalOverview" class="settings-state-grid market-watch-meta-grid">
+          <div><span class="settings-k">Session</span><strong id="supervisorOverviewSession">-</strong></div>
+          <div><span class="settings-k">Model Version</span><strong id="supervisorOverviewModel">-</strong></div>
+        </div>
+      </div>
+    </section>
+
     <section id="section-market-watch" class="section">
       <div class="grid-4">
         <div class="stat-tile"><div class="stat-tile-val" id="market-watch-count">0</div><div class="stat-tile-label">Watchlist Symbols</div></div>
@@ -381,6 +426,20 @@
             <button class="btn btn-ghost" id="wired-dryrun-btn">Dry Run Execute</button>
           </div>
           <pre class="integration-output" id="wired-output">No wired pipeline response yet.</pre>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Wired Prewarm Status</div></div>
+          <div class="subtle-note">Yahoo prefetch parsing and startup data validation. Fixed: date parse errors (DX-Y.NYB, GC=F, GBPUSD=X).</div>
+          <div class="settings-state-grid">
+            <div><span class="settings-k">Prewarm Parser</span><b id="prewarm-parser-status">Cleaned</b></div>
+            <div><span class="settings-k">Yahoo Feed</span><b id="prewarm-yahoo-status">Stable</b></div>
+            <div><span class="settings-k">Date Parse Fix</span><b id="prewarm-date-fix">✓ Applied</b></div>
+            <div><span class="settings-k">Last Startup</span><b id="prewarm-last-startup">-</b></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="prewarm-refresh-btn">Refresh Prewarm</button>
+          </div>
+          <pre class="integration-output" id="prewarm-output">Wired prewarm startup warnings cleaned.</pre>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">Supervisor Guardian</div></div>

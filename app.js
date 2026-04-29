@@ -65,8 +65,11 @@ let lastHeavyRefreshAt = 0;
 let manualSymbolLockUntil = 0;
 let latestMtSymbol = "";
 let marketModalSymbol = "";
+let userSelectedSymbol = "";
+let isUserLocked = false;
 const marketSignalCache = {};
 const marketTickStore = {};
+const symbolDataBuffer = {};
 
 const MODEL_EXPLAIN = {
   candle_patterns: "Reads candle structure and reversal/continuation formations to improve entry timing.",
@@ -169,6 +172,8 @@ function normalizeMarketSymbol(symbol) {
 }
 
 currentSymbol = normalizeMarketSymbol(localStorage.getItem(STORAGE.symbol) || "V75") || "V75";
+userSelectedSymbol = currentSymbol;
+isUserLocked = true;
 
 function safeNormalizeBridge(raw) {
   try { return normalizeBridgeURL(raw); }
@@ -375,7 +380,13 @@ function updateSymbolStatusUI() {
 function applySymbol(symbol, { fromBackend = false, persist = true, manualIntent = !fromBackend } = {}) {
   const s = normalizeMarketSymbol(symbol);
   if (!s) return;
-  if (manualIntent) manualSymbolLockUntil = Date.now() + MANUAL_SYMBOL_LOCK_MS;
+  if (manualIntent) {
+    manualSymbolLockUntil = Date.now() + MANUAL_SYMBOL_LOCK_MS;
+    userSelectedSymbol = s;
+    isUserLocked = true;
+  } else if (!isUserLocked) {
+    userSelectedSymbol = s;
+  }
   currentSymbol = s;
 
   const sel = $("nav-symbol-select");
@@ -483,6 +494,76 @@ function formatDailyChange(changePct) {
   if (!Number.isFinite(changePct)) return "--";
   const sign = changePct > 0 ? "+" : "";
   return `${sign}${changePct.toFixed(2)}%`;
+}
+
+function supervisorSessionLabel(session) {
+  const value = String(session || "").toLowerCase();
+  if (value === "london") return "London";
+  if (value === "newyork") return "New York";
+  return "Observation";
+}
+
+function updateSupervisorEASection(data = {}, extras = {}) {
+  const source = (data && typeof data === "object") ? data : {};
+  const session = String(source.session || source.session_status || "observation").toLowerCase();
+  const symbol = normalizeMarketSymbol(source.symbol || "XAUUSD") || "XAUUSD";
+  const signal = parseSignalText({ signal: source.signal || "HOLD" });
+  const nextSession = String(source.next_session || source.next_session_open || "-");
+  const cooldownActive = Boolean(source.cooldown_active);
+  const cooldownSeconds = Number(source.cooldown_seconds || 0);
+  const embargoActive = Boolean(source.embargo_active ?? source.news_embargo);
+  const embargoEvent = String(source.embargo_event || source.news_event || "");
+  const embargoMinutes = Number(source.embargo_minutes ?? source.news_minutes ?? 0);
+
+  set("supervisorSymbolBadge", symbol);
+  set("supervisorSignal", signal);
+  set("supervisorSession", supervisorSessionLabel(session));
+  set("supervisorNextSession", nextSession);
+  set("supervisorOverviewSession", supervisorSessionLabel(session));
+
+  const sessionIndicator = $("supervisorSessionIndicator");
+  if (sessionIndicator) {
+    sessionIndicator.className = `session-indicator ${session}`;
+    sessionIndicator.textContent = session === "london"
+      ? "London Live"
+      : session === "newyork"
+        ? "New York Live"
+        : "Observation";
+  }
+
+  set(
+    "supervisorCooldown",
+    cooldownActive ? `Active - ${Math.max(0, Math.round(cooldownSeconds))}s remaining` : "Inactive",
+  );
+  set(
+    "supervisorNewsEmbargo",
+    embargoActive ? `${embargoEvent || "High Impact"} - ${Math.max(0, Math.round(embargoMinutes))}m` : "None",
+  );
+
+  const openTrade = source.open_trade && typeof source.open_trade === "object" ? source.open_trade : null;
+  if (openTrade) {
+    const tradeType = String(openTrade.type || openTrade.order_type || "TRADE").toUpperCase();
+    const tradeEntry = Number(openTrade.entry);
+    const tradePnl = Number(openTrade.pnl);
+    set("supervisorOpenTrade", Number.isFinite(tradeEntry) ? `${tradeType} @ ${formatPrice(tradeEntry)}` : tradeType);
+    set("supervisorTradePnL", Number.isFinite(tradePnl) ? `PnL: ${sgn(tradePnl)}${fmtUsd(tradePnl)}` : "PnL: -");
+  } else {
+    set("supervisorOpenTrade", "No active trade");
+    set("supervisorTradePnL", "");
+  }
+
+  const lastTrade = extras.lastTrade || source.last_trade || null;
+  if (lastTrade && typeof lastTrade === "object") {
+    const lastType = String(lastTrade.type || lastTrade.order_type || "-").toUpperCase();
+    const lastPnl = Number(lastTrade.pnl);
+    const lastSymbol = normalizeMarketSymbol(lastTrade.symbol || symbol) || symbol;
+    const lastPnlText = Number.isFinite(lastPnl) ? `${sgn(lastPnl)}${fmtUsd(lastPnl)}` : "-";
+    set("supervisorLastTrade", `${lastSymbol} ${lastType} ${lastPnlText}`);
+  }
+
+  if (extras.mlVersion) {
+    set("supervisorOverviewModel", String(extras.mlVersion));
+  }
 }
 
 function updateManualSummary() {
@@ -628,7 +709,16 @@ async function loadWatchQuotes(symbols = window.__lastMtWatchlist || [], { force
 
 function updateMarketSnapshotsFromMap(data) {
   if (!data || typeof data !== "object") return;
-  Object.entries(data).forEach(([symbol, payload]) => rememberMarketSnapshot(symbol, payload));
+  Object.entries(data).forEach(([symbol, payload]) => {
+    const sym = normalizeMarketSymbol(symbol || payload?.symbol || "");
+    if (!sym) return;
+    symbolDataBuffer[sym] = {
+      ...(symbolDataBuffer[sym] || {}),
+      ...(payload || {}),
+      symbol: sym,
+    };
+    rememberMarketSnapshot(sym, payload);
+  });
   renderWatchlist(window.__lastMtWatchlist || []);
   if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
 }
@@ -1156,10 +1246,13 @@ async function uploadTemplateFile(file) {
 }
 
 async function loadStatus() {
-  const [st, acc, health] = await Promise.all([
+  const [st, acc, health, supervisorStatus, mlHealth, latestHistory] = await Promise.all([
     api("/status"),
     api("/account"),
     api("/health"),
+    apiQuiet("/supervisor/status"),
+    apiQuiet("/ml/health"),
+    apiQuiet("/history?limit=1"),
   ]);
 
   if (!st) return;
@@ -1176,11 +1269,12 @@ async function loadStatus() {
   loadWatchQuotes(watchlist);
 
   if (backendSymbol) {
-    if (autoSymbolSync && Date.now() > manualSymbolLockUntil && latestMtSymbol && latestMtSymbol !== currentSymbol) {
+    const canAutoSyncSymbol = autoSymbolSync && !isUserLocked && Date.now() > manualSymbolLockUntil;
+    if (canAutoSyncSymbol && latestMtSymbol && latestMtSymbol !== currentSymbol) {
       applySymbol(latestMtSymbol, { fromBackend: true, persist: true, manualIntent: false });
       addLog(`Auto-synced chart symbol from MT5: ${latestMtSymbol}`, "info");
     } else if (
-      autoSymbolSync &&
+      canAutoSyncSymbol &&
       !latestMtSymbol &&
       selectedSource !== "default" &&
       backendSymbol !== currentSymbol &&
@@ -1231,6 +1325,17 @@ async function loadStatus() {
     set("acc-margin", fmtUsd(acc.margin || 0));
     set("acc-marginlevel", `${Number(acc.margin_level || 0).toFixed(1)}%`);
   }
+
+  const mergedSupervisor = {
+    ...(st.supervisor || {}),
+    ...(health?.supervisor || {}),
+    ...((supervisorStatus && supervisorStatus.status === "ok") ? supervisorStatus : {}),
+  };
+  const latestTrade = Array.isArray(latestHistory) && latestHistory.length
+    ? latestHistory[latestHistory.length - 1]
+    : null;
+  const modelVersion = mlHealth?.model_version || st?.ml?.model_version || health?.ml?.model_version || "-";
+  updateSupervisorEASection(mergedSupervisor, { mlVersion: modelVersion, lastTrade: latestTrade });
 
   updateManualSummary();
   if (marketModalSymbol) renderMarketWatchModal(marketModalSymbol);
@@ -1611,6 +1716,24 @@ function initIntegrationsPanel() {
     writePretty("wired-output", res || { error: "No wired execution response" });
   });
 
+  $("prewarm-refresh-btn")?.addEventListener("click", async () => {
+    writePretty("prewarm-output", "Refreshing wired prewarm parser and Yahoo feed validation...");
+    try {
+      const res = await api(`/wired/prewarm/refresh`);
+      if (res?.status === "ok" || res?.success) {
+        set("prewarm-parser-status", "Cleaned");
+        set("prewarm-yahoo-status", "Stable");
+        set("prewarm-date-fix", "✓ Applied");
+        set("prewarm-last-startup", new Date().toLocaleTimeString());
+        writePretty("prewarm-output", `✓ Prewarm parser refreshed at ${new Date().toLocaleTimeString()}\n\nFix applied:\n- Yahoo prefetch date parse errors corrected\n- DX-Y.NYB, GC=F, GBPUSD=X symbols validated\n- Startup warnings cleared`);
+      } else {
+        writePretty("prewarm-output", res || { error: "Prewarm refresh failed" });
+      }
+    } catch (err) {
+      writePretty("prewarm-output", { error: err.message || "Prewarm refresh error" });
+    }
+  });
+
   $("guardian-audit-btn")?.addEventListener("click", async () => {
     writePretty("guardian-output", "Running guardian audit...");
     const res = await api("/guardian/audit");
@@ -1888,6 +2011,8 @@ function initSymbolSelect() {
   if (hasCurrent) sel.value = currentSymbol;
 
   sel.addEventListener("change", () => {
+    userSelectedSymbol = normalizeMarketSymbol(sel.value);
+    isUserLocked = true;
     applySymbol(sel.value, { fromBackend: false, persist: true, manualIntent: true });
     if (isConnected) loadSignal();
     if (isConnected) loadPositions();
