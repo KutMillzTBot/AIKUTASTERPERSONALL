@@ -1119,6 +1119,105 @@ body::before {
   margin-bottom: 16px;
 }
 
+.supervisor-ea-panel {
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
+}
+
+.supervisor-ea-panel::before {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, transparent 62%);
+}
+
+.supervisor-ea-header-meta {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.supervisor-symbol-badge {
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.session-indicator {
+  border: 1px solid var(--border);
+  background: rgba(99, 132, 255, 0.12);
+  color: var(--text-sec);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.session-indicator.london {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+}
+
+.session-indicator.newyork {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+.session-indicator.observation {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+
+.supervisor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.supervisor-card {
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  background: rgba(12, 15, 24, 0.84);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  min-height: 86px;
+}
+
+.supervisor-card label {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.supervisor-card .sub-label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.supervisor-card .pnl-display {
+  color: var(--accent3);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.signal-card .signal-display {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+#supervisorSignalOverview {
+  margin-top: 12px;
+}
+
 .drag-line.is-armed {
   height: 4px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.2), 0 0 10px currentColor;
@@ -1304,6 +1403,9 @@ body::before {
   .market-modal-detail-grid {
     grid-template-columns: 1fr;
   }
+  .supervisor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   #deriv-chart-frame {
     height: 560px;
   }
@@ -1311,6 +1413,9 @@ body::before {
 
 @media(max-width:600px) {
   .manual-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .supervisor-grid {
     grid-template-columns: 1fr;
   }
 }
