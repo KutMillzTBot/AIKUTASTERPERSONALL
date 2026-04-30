@@ -1600,7 +1600,7 @@ async function loadServerLog() {
 }
 
 async function loadIntegrationStatus() {
-  const [data, guardian, wired, knowledge, agentic, orchestrator, observability, reflection] = await Promise.all([
+  const [data, guardian, wired, knowledge, agentic, orchestrator, observability, reflection, intelligence] = await Promise.all([
     api("/integrations/status"),
     apiQuiet("/guardian/summary"),
     apiQuiet("/wired/system/status"),
@@ -1609,6 +1609,7 @@ async function loadIntegrationStatus() {
     apiQuiet("/orchestrator/status"),
     apiQuiet("/observability/summary"),
     apiQuiet("/reflection/status"),
+    apiQuiet("/intelligence/dashboard"),
   ]);
   if (!data) return;
   set("int-telegram-status", data.telegram_configured ? "READY" : "SET TOKEN");
@@ -1622,6 +1623,7 @@ async function loadIntegrationStatus() {
   set("int-orchestrator-status", data.orchestrator_ready ? "READY" : "OFF");
   set("int-observability-status", data.observability_ready ? "READY" : "OFF");
   set("int-reflection-status", data.reflection_ready ? "READY" : "OFF");
+  set("int-intelligence-status", data.trade_intelligence_ready ? "READY" : "OFF");
   set("wired-engine-status", data.wired_signal_ready ? "Live through bridge" : data.wired_pipeline_ready ? "Connected" : "Offline");
   set("wired-model-count", data.wired_ready_models || 0);
   set("wired-source-url", data.wired_base_url || "-");
@@ -1648,6 +1650,21 @@ async function loadIntegrationStatus() {
   set("observability-health", observability?.health != null ? String(observability.health) : "-");
   set("observability-alerts", data.observability_alerts || observability?.alerts || 0);
   set("reflection-count", data.reflection_items || reflection?.count || 0);
+
+  if (intelligence && intelligence.status === "ok") {
+    set("intel-trades-today", intelligence.trades_today ?? 0);
+    set("intel-winpct-today", `${Number(intelligence.win_pct_today || 0).toFixed(2)}%`);
+    set("intel-best-model", intelligence.best_model_today || "-");
+    set("intel-worst-mistake", intelligence.worst_mistake_today || "-");
+    set("intel-version", intelligence.current_version || "-");
+    set("intel-learning-progress", `${Number(intelligence.learning_progress_pct || 0).toFixed(1)}%`);
+    set("intel-db-size", `${Number(intelligence.database_size_mb || 0).toFixed(3)} MB`);
+    const mlConf = Number(intelligence?.similar_setup_confidence || 0);
+    set("intel-setup-confidence", mlConf > 0 ? `${(mlConf * 100).toFixed(1)}%` : "-");
+    set("intel-output", JSON.stringify(intelligence, null, 2));
+  } else {
+    set("intel-output", JSON.stringify(intelligence || { status: "degraded" }, null, 2));
+  }
 }
 
 function renderSyntheticRows(rows) {
@@ -1664,6 +1681,13 @@ function renderSyntheticRows(rows) {
 
 function initIntegrationsPanel() {
   const writePretty = (id, value) => set(id, typeof value === "string" ? value : JSON.stringify(value, null, 2));
+
+  $("intel-refresh-btn")?.addEventListener("click", async () => {
+    writePretty("intel-output", "Refreshing trade intelligence...");
+    const res = await api("/intelligence/dashboard");
+    writePretty("intel-output", res || { error: "No intelligence response" });
+    await loadIntegrationStatus();
+  });
 
   $("voice-send-btn")?.addEventListener("click", async () => {
     const text = $("voice-text-input")?.value?.trim() || "";

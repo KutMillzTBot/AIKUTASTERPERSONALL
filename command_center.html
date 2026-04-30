@@ -374,6 +374,7 @@
         <div class="stat-tile"><div class="stat-tile-val" id="int-orchestrator-status">-</div><div class="stat-tile-label">Orchestrator</div></div>
         <div class="stat-tile"><div class="stat-tile-val" id="int-observability-status">-</div><div class="stat-tile-label">Observability</div></div>
         <div class="stat-tile"><div class="stat-tile-val" id="int-reflection-status">-</div><div class="stat-tile-label">Reflection</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-intelligence-status">-</div><div class="stat-tile-label">Trade Intel</div></div>
       </div>
       <div class="grid-2">
         <div class="card">
@@ -410,6 +411,24 @@
             <tbody id="synthetic-tbody"></tbody>
           </table>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">KUT MILZ Trade Intelligence Core</div></div>
+        <div class="subtle-note">Permanent trade memory engine: captures every trade lifecycle event, grades outcomes, performs root-cause analysis, and updates model learning queues.</div>
+        <div class="settings-state-grid">
+          <div><span class="settings-k">Trades Today</span><b id="intel-trades-today">0</b></div>
+          <div><span class="settings-k">Win % Today</span><b id="intel-winpct-today">0%</b></div>
+          <div><span class="settings-k">Best Model</span><b id="intel-best-model">-</b></div>
+          <div><span class="settings-k">Worst Mistake</span><b id="intel-worst-mistake">-</b></div>
+          <div><span class="settings-k">Current Version</span><b id="intel-version">-</b></div>
+          <div><span class="settings-k">Learning Progress</span><b id="intel-learning-progress">0%</b></div>
+          <div><span class="settings-k">Database Size</span><b id="intel-db-size">0 MB</b></div>
+          <div><span class="settings-k">Setup Confidence</span><b id="intel-setup-confidence">-</b></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="intel-refresh-btn">Refresh Intelligence</button>
+        </div>
+        <pre class="integration-output" id="intel-output">No intelligence summary yet.</pre>
       </div>
       <div class="grid-2">
         <div class="card">
