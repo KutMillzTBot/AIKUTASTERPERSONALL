@@ -1,12 +1,54 @@
+# Ignore all files by default
 *
+
+# Whitelist gitignore
 !.gitignore
+
+# Whitelist frontend files only (HTML/CSS/JS)
 !index.html
 !command_center.html
 !style.css
 !app.js
+!sw.js
+!manifest.json
+
+# Whitelist ForexSmartBot frontend assets
 !ForexSmartBot/
 ForexSmartBot/*
-ForexSmartBot/build_simple.py
 !ForexSmartBot/forexsmartbot_dashboard.html
 !ForexSmartBot/forexsmartbot_dashboard.css
 !ForexSmartBot/forexsmartbot_dashboard.js
+!ForexSmartBot/README.md
+!ForexSmartBot/LICENSE
+
+# Whitelist docs frontend only
+!docs/
+docs/*
+!docs/index.html
+!docs/command_center.html
+!docs/style.css
+!docs/app.js
+!docs/README.md
+!docs/ForexSmartBot/
+docs/ForexSmartBot/*
+!docs/ForexSmartBot/forexsmartbot_dashboard.html
+!docs/ForexSmartBot/forexsmartbot_dashboard.css
+!docs/ForexSmartBot/forexsmartbot_dashboard.js
+!docs/ForexSmartBot/README.md
+
+# Keep all Python files fully local (not pushed)
+*.py
+__pycache__/
+*.pyc
+
+# Keep all PowerShell scripts fully local (not pushed)
+*.ps1
+
+# Keep all MQ5/EX5 trading files fully local
+*.mq5
+*.ex5
+
+# Keep all config/state files fully local
+*.json
+*.csv
+*.bat

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="default-bridge" content="https://description-dollars-prove-living.trycloudflare.com" />
+  <title>SupervisorTrainer Command Center v6</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <button class="nav-hamburger" aria-label="menu">☰</button>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">📊</div>
+      <div class="nav-logo-text">Supervisor<span>Trainer</span> v6</div>
+    </a>
+    <div class="nav-spacer"></div>
+    <div class="nav-symbol-stack">
+      <select id="nav-symbol-select" class="nav-symbol-select">
+        <optgroup label="Forex">
+          <option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option><option value="USDJPY">USDJPY</option><option value="GBPJPY">GBPJPY</option><option value="AUDUSD">AUDUSD</option><option value="USDCAD">USDCAD</option><option value="USDCHF">USDCHF</option><option value="NZDUSD">NZDUSD</option><option value="EURJPY">EURJPY</option><option value="EURGBP">EURGBP</option><option value="EURAUD">EURAUD</option><option value="GBPCHF">GBPCHF</option>
+        </optgroup>
+        <optgroup label="Metals">
+          <option value="XAUUSD">XAUUSD</option><option value="XAGUSD">XAGUSD</option>
+        </optgroup>
+        <optgroup label="Crypto">
+          <option value="BTCUSD">BTCUSD</option><option value="ETHUSD">ETHUSD</option><option value="LTCUSD">LTCUSD</option><option value="XRPUSD">XRPUSD</option><option value="SOLUSD">SOLUSD</option>
+        </optgroup>
+        <optgroup label="Synthetics">
+          <option value="V10">V10</option><option value="V25">V25</option><option value="V50">V50</option><option value="V75" selected>V75</option><option value="V100">V100</option><option value="CRASH300">CRASH300</option><option value="BOOM300">BOOM300</option><option value="CRASH500">CRASH500</option><option value="BOOM500">BOOM500</option><option value="CRASH1000">CRASH1000</option><option value="BOOM1000">BOOM1000</option>
+        </optgroup>
+      </select>
+      <div class="nav-symbol-meta">
+        <span class="label-tag accent" id="nav-symbol-badge">Pinned</span>
+        <span class="nav-symbol-caption" id="nav-symbol-caption">Waiting for MT5 symbol</span>
+      </div>
+    </div>
+    <div class="nav-status"><span class="nav-dot"></span><span id="bridge-url">http://127.0.0.1:5050</span></div>
+    <div class="nav-time" id="nav-time">--:--:-- UTC</div>
+    <button class="nav-refresh-btn" id="nav-settings-btn">Settings</button>
+    <button class="nav-refresh-btn" id="refresh-btn">↻ Refresh</button>
+  </nav>
+
+  <aside class="sidebar">
+    <div class="sidebar-section-label">Live</div>
+    <div class="sidebar-item active" data-section="section-overview"><span class="si-icon">⚡</span>Overview</div>
+    <div class="sidebar-item" data-section="section-signal"><span class="si-icon">📡</span>Signal</div>
+    <div class="sidebar-item" data-section="section-chart"><span class="si-icon">📈</span>Chart</div>
+    <div class="sidebar-item" data-section="section-market-watch"><span class="si-icon">👁️</span>Market Watch</div>
+    <div class="sidebar-item" data-section="section-positions"><span class="si-icon">📂</span>Positions</div>
+
+    <div class="sidebar-section-label">AI Engine</div>
+    <div class="sidebar-item" data-section="section-models"><span class="si-icon">🧠</span>Models</div>
+    <div class="sidebar-item" data-section="section-weights"><span class="si-icon">⚖️</span>Weights</div>
+    <div class="sidebar-item" data-section="section-backtest"><span class="si-icon">🧪</span>Backtest</div>
+    <div class="sidebar-item" data-section="section-forexsmartbot"><span class="si-icon">🧩</span>ForexSmartBot</div>
+
+    <div class="sidebar-section-label">Account</div>
+    <div class="sidebar-item" data-section="section-account"><span class="si-icon">💰</span>Account</div>
+    <div class="sidebar-item" data-section="section-risk"><span class="si-icon">🛡️</span>Risk</div>
+    <div class="sidebar-item" data-section="section-history"><span class="si-icon">📋</span>History</div>
+
+    <div class="sidebar-section-label">System</div>
+    <div class="sidebar-item" data-section="section-control"><span class="si-icon">🎮</span>Control</div>
+    <div class="sidebar-item" data-section="section-integrations"><span class="si-icon">🛰️</span>Integrations</div>
+    <div class="sidebar-item" data-section="section-settings"><span class="si-icon">⚙️</span>Settings</div>
+    <div class="sidebar-item" data-section="section-results"><span class="si-icon">🧾</span>Results CSV</div>
+    <div class="sidebar-item" data-section="section-log"><span class="si-icon">🖥️</span>Log</div>
+    <div class="sidebar-footer"><div class="sidebar-version">Fast Poll: 5s</div></div>
+  </aside>
+
+  <main class="main">
+    <section id="section-overview" class="section active">
+      <div class="grid-4">
+        <div class="stat-tile"><div class="stat-tile-val" id="acc-balance">$0.00</div><div class="stat-tile-label">Balance</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="acc-equity">$0.00</div><div class="stat-tile-label">Equity</div></div>
+        <div class="stat-tile"><div class="stat-tile-val pos" id="acc-float">+$0.00</div><div class="stat-tile-label">Float P&amp;L</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="risk-winrate">0.0%</div><div class="stat-tile-label">Win Rate</div></div>
+      </div>
+
+      <div class="hero-card hold-glow">
+        <div class="hero-grid">
+          <div class="hero-left">
+            <div class="hero-label">Current Signal</div>
+            <div class="hero-signal HOLD" id="hero-signal-text">HOLD</div>
+            <div class="hero-sub">Symbol: <b id="signal-symbol">V75</b></div>
+            <div class="hero-score-big" id="hero-score-big">score=0.500</div>
+          </div>
+          <div class="hero-center">
+            <div class="conf-ring-wrap">
+              <svg viewBox="0 0 140 140">
+                <circle class="conf-ring-bg" cx="70" cy="70" r="60"></circle>
+                <circle id="conf-ring-fill" class="conf-ring-fill yellow" cx="70" cy="70" r="60"></circle>
+              </svg>
+              <div class="conf-ring-inner">
+                <div class="conf-ring-pct" id="conf-ring-pct">0%</div>
+                <div class="conf-ring-label">CONFIDENCE</div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="ict-grid">
+              <div class="ict-item"><div class="ict-item-label">OB 50 ENTRY</div><div class="ict-item-val accent" id="signal-ob50">0.00000</div></div>
+              <div class="ict-item"><div class="ict-item-label">STOP LOSS</div><div class="ict-item-val red" id="signal-sl">0.00000</div></div>
+              <div class="ict-item"><div class="ict-item-label">TAKE PROFIT</div><div class="ict-item-val green" id="signal-tp">0.00000</div></div>
+              <div class="ict-item"><div class="ict-item-label">SIGNAL</div><div id="signal-badge"><span class="badge hold">HOLD</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">System Status</div></div>
+          <div style="display:grid;gap:10px;font-size:13px">
+            <div style="display:flex;justify-content:space-between"><span>Engine</span><b id="status-engine">—</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Mode</span><b id="status-mode">—</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Symbol</span><b id="status-symbol">—</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Uptime</span><b id="status-uptime">—</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Broker</span><b id="acc-broker">—</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Leverage</span><b id="acc-leverage">—</b></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Portfolio Health</div></div>
+          <div class="health-ring-wrap">
+            <div style="flex:1">
+              <div class="health-score-num" id="health-score">0/100</div>
+              <div class="health-score-lbl" id="health-status">Waiting</div>
+              <div class="progress-wrap"><div class="progress-track"><div id="health-bar" class="progress-fill" style="width:0%"></div></div></div>
+            </div>
+          </div>
+          <div style="display:grid;gap:8px;font-size:13px;margin-top:10px">
+            <div style="display:flex;justify-content:space-between"><span>Open Positions</span><b id="risk-openpos">0</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Total Trades</span><b id="risk-trades">0</b></div>
+            <div style="display:flex;justify-content:space-between"><span>Loss Streak</span><b id="risk-streak">0</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-signal" class="section">
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><div class="card-title">ICT Levels</div></div>
+          <div class="grid-2">
+            <div class="ict-item"><div class="ict-item-label">OB TOP</div><div class="ict-item-val" id="ict-obtop">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">OB BOTTOM</div><div class="ict-item-val" id="ict-obbot">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">OB 50</div><div class="ict-item-val accent" id="ict-ob50">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">FVG TOP</div><div class="ict-item-val" id="ict-fvgtop">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">FVG BOTTOM</div><div class="ict-item-val" id="ict-fvgbot">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">BOS</div><div class="ict-item-val yellow" id="ict-bos">—</div></div>
+            <div class="ict-item"><div class="ict-item-label">SL</div><div class="ict-item-val red" id="ict-sl">0.00000</div></div>
+            <div class="ict-item"><div class="ict-item-label">TP</div><div class="ict-item-val green" id="ict-tp">0.00000</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><div class="card-title">Model Confidence</div></div><div id="model-confidence"></div></div>
+      </div>
+    </section>
+
+    <section id="section-chart" class="section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Deriv Chart - Auto switches with selected market</div>
+          <button class="btn btn-ghost btn-sm" id="chart-save-template-btn">Save Template</button>
+          <button class="btn btn-ghost btn-sm" id="chart-download-template-btn">Download Template</button>
+          <label class="btn btn-ghost btn-sm chart-upload-btn">
+            Upload Template
+            <input type="file" id="chart-upload-template-input" accept=".json,application/json" />
+          </label>
+          <button class="btn btn-primary btn-sm" id="chart-open-new-tab-btn">Open Deriv</button>
+        </div>
+        <p class="chart-note">For cross-device drawings, paste your Deriv shared layout URL in Settings. This dashboard will keep and restore it.</p>
+        <div class="chart-wrap">
+          <iframe id="deriv-chart-frame" title="Deriv Chart" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+        <div class="manual-warning">Manual trading is at your own risk. Rule #1: risk management first.</div>
+        <div class="grid-2 chart-lower-grid" style="margin-top:12px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">MT5 Market Watch</div></div>
+            <p class="chart-note">Fetched from your MT5 Market Watch. Startup now follows the attached MT5 chart symbol, while your own click stays pinned instead of getting hijacked by refreshes.</p>
+            <div id="market-watchlist" class="watchlist-grid"></div>
+          </div>
+          <div class="card manual-trade-panel">
+            <div class="card-header"><div class="card-title">Unified Buy / Sell Panel</div></div>
+            <div class="manual-ticket-grid">
+              <div class="manual-ticket-fields">
+                <div class="grid-2 compact-grid">
+                  <div class="form-group"><label class="form-label">Contract Type</label><select class="form-select" id="manual-order-type"><option value="BUY_MARKET">Buy Market</option><option value="SELL_MARKET">Sell Market</option><option value="BUY_LIMIT">Buy Limit</option><option value="SELL_LIMIT">Sell Limit</option><option value="BUY_STOP">Buy Stop</option><option value="SELL_STOP">Sell Stop</option><option value="BUY_STOP_LIMIT">Buy Stop Limit</option><option value="SELL_STOP_LIMIT">Sell Stop Limit</option></select></div>
+                  <div class="form-group"><label class="form-label">Lot</label><input class="form-input" id="manual-lot" type="number" step="0.01" value="0.01" /></div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-ghost" id="manual-arm-entry-btn">Arm Entry</button>
+                  <button class="btn btn-ghost" id="manual-arm-sl-btn">Arm SL</button>
+                  <button class="btn btn-ghost" id="manual-arm-tp-btn">Arm TP</button>
+                  <button class="btn btn-ghost" id="manual-reset-lines-btn">Reset Lines</button>
+                </div>
+                <p class="chart-note">Use Entry as the stop trigger. For stop-limit orders, Limit Price is the resting limit that appears after the stop trigger is touched.</p>
+                <div class="form-group"><label class="form-label">Side</label><input class="form-input" id="manual-side-label" value="BUY" readonly /></div>
+                <div class="form-group"><label class="form-label">Entry</label><input class="form-input" id="manual-entry" type="number" step="0.00001" /></div>
+                <div class="form-group" id="manual-limit-price-wrap"><label class="form-label">Limit Price</label><input class="form-input" id="manual-limit-price" type="number" step="0.00001" /></div>
+                <div class="form-group"><label class="form-label">Stop Loss</label><input class="form-input" id="manual-sl" type="number" step="0.00001" /></div>
+                <div class="form-group"><label class="form-label">Take Profit</label><input class="form-input" id="manual-tp" type="number" step="0.00001" /></div>
+                <label class="settings-check"><input id="manual-use-sl" type="checkbox" checked /><span>Use SL line</span></label>
+                <label class="settings-check"><input id="manual-use-tp" type="checkbox" checked /><span>Use TP line</span></label>
+                <div class="grid-2 compact-grid">
+                  <div class="form-group"><label class="form-label">Trailing Starts At RR</label><input class="form-input" id="manual-trailing-start" type="number" step="0.1" value="0.5" /></div>
+                  <div class="form-group"><label class="form-label">Trailing Step RR</label><input class="form-input" id="manual-trailing-step" type="number" step="0.1" value="0.5" /></div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-primary" id="manual-buy-btn">Place Buy</button>
+                  <button class="btn btn-danger" id="manual-sell-btn">Place Sell</button>
+                </div>
+              </div>
+              <div class="manual-ticket-board">
+                <div id="manual-drag-board" class="manual-drag-board">
+                  <div class="drag-line drag-entry" id="drag-entry-line">ENTRY</div>
+                  <div class="drag-line drag-sl" id="drag-sl-line">SL</div>
+                  <div class="drag-line drag-tp" id="drag-tp-line">TP</div>
+                </div>
+                <p class="chart-note" id="manual-drag-help">Buy mode: drag SL below and TP above entry. Sell mode: opposite direction.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="card-header"><div class="card-title">Trades On This Chart Symbol</div></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Ticket</th><th>Type</th><th>Entry</th><th>SL</th><th>TP</th><th>P&amp;L</th><th>Action</th></tr></thead><tbody id="chart-positions-tbody"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-market-watch" class="section">
+      <div class="grid-4">
+        <div class="stat-tile"><div class="stat-tile-val" id="market-watch-count">0</div><div class="stat-tile-label">Watchlist Symbols</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="market-watch-linked-symbol">—</div><div class="stat-tile-label">MT Chart Symbol</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="market-watch-active-symbol">—</div><div class="stat-tile-label">Pinned Symbol</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="market-watch-state">Waiting</div><div class="stat-tile-label">MT Link</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">MT5 Market Watch</div>
+          <button class="btn btn-ghost btn-sm" id="market-watch-refresh-btn">Refresh Watchlist</button>
+        </div>
+        <p class="chart-note">Fetched from your attached MT5 Market Watch. Click any market here to switch the main chart, signal stack, and manual trading panel without the dropdown getting hijacked.</p>
+        <div class="settings-state-grid market-watch-meta-grid">
+          <div><span class="settings-k">Watchlist Source</span><strong id="market-watch-source">Waiting for MT5</strong></div>
+          <div><span class="settings-k">Attached Chart Symbol</span><strong id="market-watch-source-symbol">—</strong></div>
+        </div>
+        <div id="market-watchlist-section" class="watchlist-grid watchlist-grid-lg"></div>
+      </div>
+    </section>
+
+    <section id="section-positions" class="section">
+      <div class="card"><div class="card-header"><div class="card-title">Open Positions</div><button class="btn btn-danger btn-sm" data-action="close-all">Close All</button></div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Ticket</th><th>Symbol</th><th>Type</th><th>Lot</th><th>Entry</th><th>SL / TP</th><th>P&amp;L</th><th>Action</th></tr></thead><tbody id="positions-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="section-models" class="section"><div class="card"><div class="card-header"><div class="card-title">AI Models</div><button class="btn btn-primary btn-sm" data-action="retrain">Retrain</button></div><div id="models-grid" class="grid-auto"></div></div></section>
+    <section id="section-weights" class="section"><div class="card"><div class="card-header"><div class="card-title">Weights</div><button class="btn btn-ghost btn-sm" data-action="reset-weights">Reset Weights</button></div><div id="weights-list"></div></div></section>
+
+    <section id="section-backtest" class="section">
+      <div class="card"><div class="card-header"><div class="card-title">Backtest</div></div>
+        <div class="form-group"><label class="form-label">Symbol</label><select id="bt-symbol-input" class="form-select"><option>EURUSD</option><option>GBPUSD</option><option>XAUUSD</option><option>BTCUSD</option><option>V75</option><option>CRASH500</option><option>BOOM500</option></select></div>
+        <div class="form-group"><label class="form-label">Days</label><input class="form-input" id="bt-days-input" type="number" value="30"></div>
+        <button class="btn btn-primary" data-action="run-backtest">Run Backtest</button>
+        <div class="progress-wrap"><div class="progress-label"><span id="backtest-status">idle</span><span id="backtest-progress">0%</span></div><div class="progress-track"><div class="progress-fill" id="backtest-bar" style="width:0%"></div></div></div>
+        <div class="grid-4">
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-symbol">—</div><div class="stat-tile-label">Symbol</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-days">—</div><div class="stat-tile-label">Days</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-trades">—</div><div class="stat-tile-label">Trades</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-winrate">—</div><div class="stat-tile-label">Win Rate</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-roi">—</div><div class="stat-tile-label">ROI</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-maxdd">—</div><div class="stat-tile-label">Max DD</div></div>
+          <div class="stat-tile"><div class="stat-tile-val" id="bt-sharpe">—</div><div class="stat-tile-label">Sharpe</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-forexsmartbot" class="section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">ForexSmartBot</div>
+          <a id="forexsmartbot-open-link" class="btn btn-ghost btn-sm" href="http://127.0.0.1:8080/" target="_blank" rel="noreferrer">Open Full View</a>
+        </div>
+        <div class="subtle-note">Shared dashboard stack: same bridge, same models, separate app section.</div>
+        <div class="iframe-shell">
+          <iframe id="forexsmartbot-frame" title="ForexSmartBot dashboard" loading="lazy"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-account" class="section"><div class="grid-4">
+      <div class="stat-tile"><div class="stat-tile-val" id="acc-balance2">$0.00</div><div class="stat-tile-label">Balance</div></div>
+      <div class="stat-tile"><div class="stat-tile-val" id="acc-equity2">$0.00</div><div class="stat-tile-label">Equity</div></div>
+      <div class="stat-tile"><div class="stat-tile-val" id="acc-float2">+$0.00</div><div class="stat-tile-label">Float</div></div>
+      <div class="stat-tile"><div class="stat-tile-val" id="acc-margin">$0.00</div><div class="stat-tile-label">Margin</div></div>
+      <div class="stat-tile"><div class="stat-tile-val" id="acc-marginlevel">0%</div><div class="stat-tile-label">Margin Level</div></div>
+      <div class="stat-tile"><div class="stat-tile-val" id="risk-dailypnl">$0.00</div><div class="stat-tile-label">Daily P&amp;L</div></div>
+    </div></section>
+
+    <section id="section-risk" class="section"><div class="grid-2"><div class="card"><div class="card-header"><div class="card-title">Risk Settings</div></div><div style="display:grid;gap:10px"><div style="display:flex;justify-content:space-between"><span>Risk / Trade</span><b id="risk-pct">1.0%</b></div><div style="display:flex;justify-content:space-between"><span>Daily Limit</span><b id="risk-daily">5.0%</b></div><div style="display:flex;justify-content:space-between"><span>Max Drawdown</span><b id="risk-maxdd">10.0%</b></div></div></div><div class="card"><div class="card-header"><div class="card-title">Lot Calculator</div></div><div class="form-group"><label class="form-label">Balance</label><input class="form-input" type="number" id="calc-balance" value="10000"></div><div class="form-group"><label class="form-label">Risk %</label><input class="form-input" type="number" id="calc-risk" value="1"></div><div class="form-group"><label class="form-label">SL (pips)</label><input class="form-input" type="number" id="calc-sl" value="20"></div><button class="btn btn-primary btn-sm" onclick="calcLot()">Calculate</button><div id="calc-result" style="margin-top:12px;font-size:20px;font-weight:800"></div></div></div></section>
+
+    <section id="section-history" class="section"><div class="card"><div class="card-header"><div class="card-title">History</div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Symbol</th><th>Type</th><th>Lot</th><th>P&amp;L</th><th>Ticket</th><th>Note</th></tr></thead><tbody id="history-tbody"></tbody></table></div></div></section>
+
+    <section id="section-control" class="section"><div class="grid-2">
+      <div class="card"><div class="card-header"><div class="card-title">Trading Control</div></div><div class="btn-row"><button class="btn btn-primary" data-action="start-trading">Start</button><button class="btn btn-danger" data-action="stop-trading">Stop</button><button class="btn btn-ghost" data-action="pause">Pause</button><button class="btn btn-ghost" data-action="resume">Resume</button></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Mode</div></div><div class="btn-row"><button class="btn btn-primary" data-action="mode-auto">Full Auto</button><button class="btn btn-ghost" data-action="mode-semi">Signal Only</button><button class="btn btn-ghost" data-action="mode-off">Off</button></div></div>
+    </div></section>
+
+    <section id="section-integrations" class="section">
+      <div class="grid-4">
+        <div class="stat-tile"><div class="stat-tile-val" id="int-telegram-status">-</div><div class="stat-tile-label">Telegram</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-voice-status">-</div><div class="stat-tile-label">Voice</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-vision-status">-</div><div class="stat-tile-label">Vision</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-synthetic-status">-</div><div class="stat-tile-label">Synthetic Lab</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-wired-status">-</div><div class="stat-tile-label">Wired Pipeline</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-guardian-status">-</div><div class="stat-tile-label">Guardian</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-knowledge-status">-</div><div class="stat-tile-label">Knowledge AI</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-agentic-status">-</div><div class="stat-tile-label">Agentic Brain</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-orchestrator-status">-</div><div class="stat-tile-label">Orchestrator</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-observability-status">-</div><div class="stat-tile-label">Observability</div></div>
+        <div class="stat-tile"><div class="stat-tile-val" id="int-reflection-status">-</div><div class="stat-tile-label">Reflection</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Voice Interface</div></div>
+          <div class="subtle-note">Connected to the copied `voice_interface` module and ready for Telegram/assistant commands.</div>
+          <div class="form-group"><label class="form-label">Prompt</label><input class="form-input" id="voice-text-input" type="text" placeholder="hey rich give me a market briefing" /></div>
+          <div class="btn-row"><button class="btn btn-primary" id="voice-send-btn">Send Voice Prompt</button></div>
+          <pre class="integration-output" id="voice-output">No voice reply yet.</pre>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Vision Structure</div></div>
+          <div class="subtle-note">Uses the copied market structure engine to read candles and return BOS, MSS, OB, FVG and sweep events.</div>
+          <div class="grid-2 compact-grid">
+            <div class="form-group"><label class="form-label">Symbol</label><input class="form-input" id="vision-symbol-input" type="text" value="XAUUSD" /></div>
+            <div class="form-group"><label class="form-label">Timeframe</label><input class="form-input" id="vision-timeframe-input" type="text" value="M15" /></div>
+          </div>
+          <div class="btn-row"><button class="btn btn-primary" id="vision-run-btn">Analyze Structure</button></div>
+          <pre class="integration-output" id="vision-output">No structure events yet.</pre>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Synthetic Lab</div></div>
+        <div class="subtle-note">Run multiple synthetic scenario passes to compare outcome ranges before pushing live changes.</div>
+        <div class="grid-4 compact-grid">
+          <div class="form-group"><label class="form-label">Symbol</label><input class="form-input" id="synthetic-symbol-input" type="text" value="XAUUSD" /></div>
+          <div class="form-group"><label class="form-label">Runs</label><input class="form-input" id="synthetic-runs-input" type="number" value="8" /></div>
+          <div class="form-group"><label class="form-label">Days</label><input class="form-input" id="synthetic-days-input" type="number" value="30" /></div>
+          <div class="form-group"><label class="form-label">Seed</label><input class="form-input" id="synthetic-seed-input" type="number" value="4242" /></div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" id="synthetic-run-btn">Run Synthetic Lab</button></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Run</th><th>Trades</th><th>Win Rate</th><th>ROI</th><th>Max DD</th><th>Ending Balance</th><th>Bias</th></tr></thead>
+            <tbody id="synthetic-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Wired Manager Pipeline</div></div>
+          <div class="subtle-note">This is the real-model manager stack from `wired_ai_system`, now proxied through the main bridge so the dashboard can use it like a native subsystem.</div>
+          <div class="settings-state-grid">
+            <div><span class="settings-k">Pipeline</span><b id="wired-engine-status">Waiting</b></div>
+            <div><span class="settings-k">Ready Models</span><b id="wired-model-count">0</b></div>
+            <div><span class="settings-k">Bridge</span><b id="wired-source-url">-</b></div>
+            <div><span class="settings-k">Last Score</span><b id="wired-last-score">-</b></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="wired-eval-btn">Evaluate Current Symbol</button>
+            <button class="btn btn-ghost" id="wired-dryrun-btn">Dry Run Execute</button>
+          </div>
+          <pre class="integration-output" id="wired-output">No wired pipeline response yet.</pre>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Supervisor Guardian</div></div>
+          <div class="subtle-note">Meta-control layer for safety, consistency, maintenance, and improvement tasks. It audits the wired manager stack and can queue remediation tasks.</div>
+          <div class="settings-state-grid">
+            <div><span class="settings-k">Guardian</span><b id="guardian-maintenance">Waiting</b></div>
+            <div><span class="settings-k">Queued Tasks</span><b id="guardian-queued">0</b></div>
+            <div><span class="settings-k">Last Audit</span><b id="guardian-last-audit">Never</b></div>
+            <div><span class="settings-k">Health</span><b id="guardian-health-summary">-</b></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="guardian-audit-btn">Run Audit</button>
+            <button class="btn btn-ghost" id="guardian-health-btn">Health Audit</button>
+            <button class="btn btn-ghost" id="guardian-security-btn">Security Audit</button>
+            <button class="btn btn-ghost" id="guardian-improve-btn">Improvement Pass</button>
+            <button class="btn btn-ghost" id="guardian-refresh-btn">Refresh Tasks</button>
+          </div>
+          <pre class="integration-output" id="guardian-output">No guardian audit yet.</pre>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Production Quality Suite</div></div>
+        <div class="subtle-note">This pack adds data validation, observability, and self-reflection on top of the live system. It helps catch bad bars, summarize control-plane health, and audit whether trade outcomes matched the logic.</div>
+        <div class="grid-2">
+          <div>
+            <div class="settings-state-grid">
+              <div><span class="settings-k">Validator</span><b id="validator-status">Waiting</b></div>
+              <div><span class="settings-k">Bad Bars</span><b id="validator-bad-bars">0</b></div>
+              <div><span class="settings-k">Observability</span><b id="observability-health">-</b></div>
+              <div><span class="settings-k">Alerts</span><b id="observability-alerts">0</b></div>
+              <div><span class="settings-k">Reflections</span><b id="reflection-count">0</b></div>
+            </div>
+            <div class="grid-2 compact-grid">
+              <div class="form-group"><label class="form-label" for="validator-symbol-input">Validate Symbol</label><input class="form-input" id="validator-symbol-input" type="text" value="XAUUSD" /></div>
+              <div class="form-group"><label class="form-label" for="reflection-regime-input">Reflection Regime</label><input class="form-input" id="reflection-regime-input" type="text" value="ranging" /></div>
+            </div>
+            <div class="grid-2 compact-grid">
+              <div class="form-group"><label class="form-label" for="validator-timeframe-input">Timeframe</label><input class="form-input" id="validator-timeframe-input" type="text" value="M15" /></div>
+              <div class="form-group"><label class="form-label" for="reflection-outcome-input">Outcome</label><select class="form-select" id="reflection-outcome-input"><option value="loss">loss</option><option value="win">win</option></select></div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="validator-run-btn">Validate Feed</button>
+              <button class="btn btn-ghost" id="observability-run-btn">Observability Summary</button>
+              <button class="btn btn-ghost" id="reflection-run-btn">Reflect Trade</button>
+            </div>
+          </div>
+          <div>
+            <pre class="integration-output" id="production-suite-output">No production-suite response yet.</pre>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Top-Level Orchestrator</div></div>
+        <div class="subtle-note">This layer sits above the agentic supervisor. It tracks trade trajectories, drift, explainability, and retraining triggers, then decides whether to run audits, repairs, or just report the system is healthy.</div>
+        <div class="grid-2">
+          <div>
+            <div class="settings-state-grid">
+              <div><span class="settings-k">Orchestrator</span><b id="orchestrator-ready">Waiting</b></div>
+              <div><span class="settings-k">Runs</span><b id="orchestrator-runs">0</b></div>
+              <div><span class="settings-k">Tasks</span><b id="orchestrator-tasks">0</b></div>
+              <div><span class="settings-k">Triggers</span><b id="orchestrator-triggers">0</b></div>
+              <div><span class="settings-k">Trajectory Memory</span><b id="orchestrator-memory">0</b></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="orchestrator-input">Ask The Orchestrator</label>
+              <input class="form-input" id="orchestrator-input" type="text" placeholder="Should the system repair itself or just monitor right now?" />
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="orchestrator-evaluate-btn">Evaluate Health</button>
+              <button class="btn btn-ghost" id="orchestrator-run-btn">Orchestrate</button>
+              <button class="btn btn-ghost" id="orchestrator-cycle-btn">Run Cycle</button>
+              <button class="btn btn-ghost" id="orchestrator-memory-btn">Show Memory</button>
+            </div>
+          </div>
+          <div>
+            <pre class="integration-output" id="orchestrator-output">No orchestrator response yet.</pre>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Agentic Supervisor AI</div></div>
+        <div class="subtle-note">Top-level system brain above the wired pipeline, Guardian, and Knowledge agent. It scores quality, safety, and reliability, recommends fixes, can execute system tasks, and learns from its own audit history.</div>
+        <div class="grid-2">
+          <div>
+            <div class="settings-state-grid">
+              <div><span class="settings-k">Agentic</span><b id="agentic-ready">Waiting</b></div>
+              <div><span class="settings-k">Audits</span><b id="agentic-audits">0</b></div>
+              <div><span class="settings-k">Repairs</span><b id="agentic-repairs">0</b></div>
+              <div><span class="settings-k">History</span><b id="agentic-history">0</b></div>
+              <div><span class="settings-k">Memory</span><b id="agentic-memory">0</b></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agentic-question-input">Ask The Agentic Supervisor</label>
+              <input class="form-input" id="agentic-question-input" type="text" placeholder="How healthy is the whole system right now?" />
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="agentic-evaluate-btn">Evaluate System</button>
+              <button class="btn btn-ghost" id="agentic-bundle-btn">Run Full Bundle</button>
+              <button class="btn btn-ghost" id="agentic-train-btn">Train From History</button>
+              <button class="btn btn-ghost" id="agentic-ask-btn">Ask</button>
+            </div>
+          </div>
+          <div>
+            <pre class="integration-output" id="agentic-output">No agentic-supervisor response yet.</pre>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Advanced Knowledge Agent</div></div>
+        <div class="subtle-note">Cross-system analysis and self-improvement brain. It reads system state, answers questions, and can create improvement tasks on top of the wired stack and Guardian.</div>
+        <div class="grid-2">
+          <div>
+            <div class="settings-state-grid">
+              <div><span class="settings-k">Knowledge</span><b id="knowledge-ready">Waiting</b></div>
+              <div><span class="settings-k">Memory Items</span><b id="knowledge-memory">0</b></div>
+              <div><span class="settings-k">Questions</span><b id="knowledge-questions">0</b></div>
+              <div><span class="settings-k">Observations</span><b id="knowledge-observations">0</b></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="knowledge-question-input">Ask The Knowledge Agent</label>
+              <input class="form-input" id="knowledge-question-input" type="text" placeholder="What is the weakest part of the system right now?" />
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="knowledge-ask-btn">Ask</button>
+              <button class="btn btn-ghost" id="knowledge-summary-btn">Summarize</button>
+              <button class="btn btn-ghost" id="knowledge-improve-btn">Self Improve</button>
+              <button class="btn btn-ghost" id="knowledge-send-btn">Send Tasks</button>
+            </div>
+          </div>
+          <div>
+            <pre class="integration-output" id="knowledge-output">No knowledge-agent response yet.</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-settings" class="section">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Backend Connection</div></div>
+          <div class="form-group">
+            <label class="form-label" for="settings-bridge-url">Bridge URL / Backend Key</label>
+            <input class="form-input" id="settings-bridge-url" type="text" placeholder="https://your-cloudflare-url" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settings-broker-select">Broker Mode</label>
+            <select class="form-select" id="settings-broker-select">
+              <option value="auto">Auto Detect (Recommended)</option>
+              <option value="mt5">MetaTrader 5</option>
+              <option value="deriv">Deriv</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="settings-connect-toggle">Connect</button>
+            <button class="btn btn-ghost" id="settings-save-btn">Save URL</button>
+          </div>
+          <div class="settings-state-grid">
+            <div><span class="settings-k">Connection</span><b id="settings-connect-state">Disconnected</b></div>
+            <div><span class="settings-k">Backend</span><b id="settings-backend-state">Unknown</b></div>
+            <div><span class="settings-k">Last Sync</span><b id="settings-last-sync">Never</b></div>
+            <div><span class="settings-k">Polling</span><b id="settings-poll-rate">2000 ms</b></div>
+          </div>
+          <label class="settings-check">
+            <input id="settings-auto-symbol" type="checkbox" checked />
+            <span>Auto sync selected symbol from attached MT chart only</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">MT5 + Chart Sync</div></div>
+          <div class="settings-state-grid">
+            <div><span class="settings-k">MT Link</span><b id="settings-mt-link">Waiting</b></div>
+            <div><span class="settings-k">MT Symbol</span><b id="settings-mt-symbol">-</b></div>
+            <div><span class="settings-k">Ingest Bars</span><b id="settings-ingest-bars">0</b></div>
+            <div><span class="settings-k">Ingest Time</span><b id="settings-ingest-time">-</b></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settings-deriv-layout-url">Deriv Shared Layout URL (optional)</label>
+            <input class="form-input" id="settings-deriv-layout-url" type="text" placeholder="https://charts.deriv.com/deriv?t=..." />
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="settings-apply-layout-btn">Apply Layout URL</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-results" class="section"><div class="card"><div class="card-header"><div class="card-title">Supervisor Results CSV</div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Step</th><th>Date</th><th>Close</th><th>Ensemble</th><th>Signal</th><th>Actual</th></tr></thead><tbody id="results-tbody"></tbody></table></div></div></section>
+    <section id="section-log" class="section"><div class="card"><div class="card-header"><div class="card-title">System Log</div></div><div class="log-terminal" id="log-terminal"></div></div></section>
+  </main>
+
+  <div id="model-info-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="model-info-title">Model Info</h3>
+        <button class="btn btn-ghost btn-sm" id="model-info-close-btn">Close</button>
+      </div>
+      <p id="model-info-body" class="modal-body"></p>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

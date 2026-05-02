@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="default-bridge" content="https://description-dollars-prove-living.trycloudflare.com" />
+  <title>ForexSmartBot Mobile Console</title>
+  <link rel="stylesheet" href="./forexsmartbot_dashboard.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <main class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">VoxHash Trading Stack</div>
+        <h1>ForexSmartBot Mobile Console</h1>
+        <p class="hero-text">
+          A phone-friendly companion page for Cloudflare and GitHub hosting, tuned for live account snapshots,
+          bridge health, and fast handoff into your Supervisor dashboard.
+        </p>
+        <div class="hero-actions">
+          <button class="primary-btn" id="fsb-refresh-btn" type="button">Refresh Snapshot</button>
+          <a class="ghost-btn" id="fsb-open-supervisor" href="../index.html" target="_blank" rel="noreferrer">Open Supervisor</a>
+        </div>
+      </div>
+      <section class="hero-side">
+        <div class="pulse-card">
+          <div class="pulse-row">
+            <span class="pulse-dot" id="fsb-status-dot"></span>
+            <span class="pulse-label" id="fsb-status-text">Checking bridge</span>
+          </div>
+          <div class="metric-line">
+            <span>Bridge URL</span>
+            <strong id="fsb-bridge-url">http://127.0.0.1:5050</strong>
+          </div>
+          <div class="metric-line">
+            <span>Bridge Health</span>
+            <strong id="fsb-bridge-health">Checking</strong>
+          </div>
+          <div class="metric-line">
+            <span>Bridge Symbol</span>
+            <strong id="fsb-bridge-symbol">-</strong>
+          </div>
+          <div class="metric-line">
+            <span>MT Link</span>
+            <strong id="fsb-mt-link">-</strong>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <section class="card-strip">
+      <article class="snap-card balance">
+        <span class="snap-label">Balance</span>
+        <strong id="fsb-balance">$0.00</strong>
+      </article>
+      <article class="snap-card equity">
+        <span class="snap-label">Equity</span>
+        <strong id="fsb-equity">$0.00</strong>
+      </article>
+      <article class="snap-card float">
+        <span class="snap-label">Float PnL</span>
+        <strong id="fsb-float">$0.00</strong>
+      </article>
+      <article class="snap-card open">
+        <span class="snap-label">Open Trades</span>
+        <strong id="fsb-open">0</strong>
+      </article>
+    </section>
+
+    <section class="card-strip compact-strip">
+      <article class="snap-card mini">
+        <span class="snap-label">Selected Symbol</span>
+        <strong id="fsb-selected-symbol">EURUSD</strong>
+      </article>
+      <article class="snap-card mini">
+        <span class="snap-label">Currency</span>
+        <strong id="fsb-currency">USD</strong>
+      </article>
+      <article class="snap-card mini">
+        <span class="snap-label">Leverage</span>
+        <strong id="fsb-leverage">-</strong>
+      </article>
+      <article class="snap-card mini">
+        <span class="snap-label">Broker Mode</span>
+        <strong id="fsb-broker-mode">AUTO</strong>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel glass">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Bridge Snapshot</div>
+            <h2>Core State</h2>
+          </div>
+          <span class="status-pill" id="fsb-health-badge">Waiting</span>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-card"><span>Mode</span><strong id="fsb-mode">-</strong></div>
+          <div class="detail-card"><span>Broker</span><strong id="fsb-broker">-</strong></div>
+          <div class="detail-card"><span>Latency Profile</span><strong>Snapshot API</strong></div>
+          <div class="detail-card"><span>Designed For</span><strong>Phone + Cloudflare</strong></div>
+        </div>
+      </article>
+
+      <article class="panel dark">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Quick Launch</div>
+            <h2>Navigation</h2>
+          </div>
+        </div>
+        <div class="launch-stack">
+          <a class="launch-tile" href="../index.html" target="_blank" rel="noreferrer">
+            <span class="launch-label">Supervisor</span>
+            <strong>Main Command Center</strong>
+            <p>Open the full dashboard if you want chart controls, models, and integrations in one place.</p>
+          </a>
+          <a class="launch-tile" href="./README.md" target="_blank" rel="noreferrer">
+            <span class="launch-label">Docs</span>
+            <strong>Project Notes</strong>
+            <p>Jump into repo docs when you need install, architecture, or deployment guidance.</p>
+          </a>
+        </div>
+      </article>
+
+      <article class="panel glass">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">MT5 Sync</div>
+            <h2>Watchlist</h2>
+          </div>
+          <span class="status-pill" id="fsb-mt-status">Waiting</span>
+        </div>
+        <div id="fsb-watchlist" class="mini-chip-grid">
+          <div class="note-card">No MT5 watchlist yet.</div>
+        </div>
+      </article>
+
+      <article class="panel dark">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Live Trades</div>
+            <h2>Open Positions</h2>
+          </div>
+        </div>
+        <div id="fsb-positions" class="mini-stack">
+          <div class="note-card">No open positions yet.</div>
+        </div>
+      </article>
+
+      <article class="panel dark">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Command Deck</div>
+            <h2>Quick Actions</h2>
+          </div>
+        </div>
+        <div class="action-grid">
+          <button class="action-tile" id="fsb-copy-bridge-btn" type="button">
+            <span>Copy Bridge</span>
+            <strong>Share Phone Link</strong>
+          </button>
+          <button class="action-tile" id="fsb-copy-page-btn" type="button">
+            <span>Copy Page URL</span>
+            <strong>Cloud Launch Link</strong>
+          </button>
+          <button class="action-tile" id="fsb-open-deriv-btn" type="button">
+            <span>Chart Access</span>
+            <strong>Open Deriv Chart</strong>
+          </button>
+          <button class="action-tile" id="fsb-open-github-btn" type="button">
+            <span>Repo</span>
+            <strong>Open GitHub Project</strong>
+          </button>
+        </div>
+      </article>
+
+      <article class="panel glass">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Operator Feed</div>
+            <h2>Live Activity</h2>
+          </div>
+        </div>
+        <div id="fsb-live-log" class="terminal-lite">
+          <div class="terminal-line">Connecting to bridge log...</div>
+        </div>
+      </article>
+
+      <article class="panel glass">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Backtest Sync</div>
+            <h2>Lab Status</h2>
+          </div>
+          <span class="status-pill" id="fsb-backtest-pill">Idle</span>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-card"><span>Backtest</span><strong id="fsb-backtest-status">Idle</strong></div>
+          <div class="detail-card"><span>Progress</span><strong id="fsb-backtest-progress">0%</strong></div>
+          <div class="detail-card"><span>Open Risk</span><strong id="fsb-risk-open">0</strong></div>
+          <div class="detail-card"><span>Win Rate</span><strong id="fsb-risk-winrate">0%</strong></div>
+        </div>
+      </article>
+
+      <article class="panel dark">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Model Layer</div>
+            <h2>Signal Engine</h2>
+          </div>
+        </div>
+        <div id="fsb-models" class="mini-stack">
+          <div class="note-card">Loading model status...</div>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Cloud Ready</div>
+            <h2>Publish Notes</h2>
+          </div>
+        </div>
+        <div class="notes-grid">
+          <div class="note-card">
+            <strong>GitHub-friendly</strong>
+            <p>This page is just HTML, CSS, and JS, so you can publish it as a static asset and pass the bridge with `?bridge=`.</p>
+          </div>
+          <div class="note-card">
+            <strong>Cloudflare-friendly</strong>
+            <p>Use your Cloudflare URL as the bridge target so your phone can read the live snapshot API remotely.</p>
+          </div>
+          <div class="note-card">
+            <strong>Low-noise loading</strong>
+            <p>The page now relies on one compact snapshot endpoint instead of blasting many backend routes every refresh.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="./forexsmartbot_dashboard.js"></script>
+</body>
+</html>
